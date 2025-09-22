@@ -218,8 +218,7 @@
             <div class="bg-white rounded-xl p-8 max-w-lg w-full text-center shadow-2xl">
                 <h3 id="save-load-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
                 <div id="save-content" class="space-y-4 hidden">
-                    <input type="text" id="filename-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="공유할 파일명 입력 (예: 제주-연수-2025)">
-                    <p class="text-sm text-gray-600 text-left">파일명을 입력하면 공유 가능한 ID가 생성됩니다.</p>
+                    <input type="text" id="filename-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="공유할 파일명을 입력해 주세요.">
                     <div class="flex justify-center gap-2">
                         <button id="confirm-save-btn" class="bg-green-500 text-white py-2 px-4 rounded-full hover:bg-green-600">저장</button>
                         <button id="cancel-save-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
@@ -274,6 +273,10 @@
         const cancelLoadBtn = document.getElementById('cancel-load-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
         
+        let __app_id = 'default-app-id'; // Add a fallback for local testing
+        if (typeof window.__app_id !== 'undefined') {
+            __app_id = window.__app_id;
+        }
 
         let dayCount = 0;
         let lastDayEndPoint = {
@@ -286,8 +289,6 @@
         window.onload = async function() {
             try {
                 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                 
                 const firebaseApp = firebase.initializeApp(firebaseConfig);
                 db = firebase.getFirestore(firebaseApp);
@@ -1097,6 +1098,7 @@
             }
 
             try {
+                // Corrected path to use __app_id
                 const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
                 await firebase.setDoc(docRef, data);
                 hideSaveLoadModal();
@@ -1126,7 +1128,7 @@
         async function renderFileList() {
             fileList.innerHTML = '';
             try {
-                // userId 필터를 제거하여 모든 파일을 불러옴
+                // Corrected path to use __app_id
                 const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`));
                 const querySnapshot = await firebase.getDocs(q);
                 
@@ -1162,6 +1164,7 @@
                 const fileId = deleteBtn.dataset.fileId;
                 showConfirmation(`파일을 정말 삭제하시겠습니까?`, async () => {
                     try {
+                        // Corrected path to use __app_id
                         const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
                         await firebase.deleteDoc(docRef);
                         showNotification('파일이 성공적으로 삭제되었습니다.');
@@ -1179,6 +1182,7 @@
         
         async function loadFileFromFileId(fileId) {
             try {
+                // Corrected path to use __app_id
                 const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
                 const docSnap = await firebase.getDoc(docRef);
 
