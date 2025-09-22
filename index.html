@@ -277,8 +277,8 @@
 
         let dayCount = 0;
         let lastDayEndPoint = {
-            name: '제주국제공항',
-            coords: { lat: '33.511335', lng: '126.492759' }
+            name: '제주공항 주차장출입구',
+            coords: { lat: '33.507421', lng: '126.494208' }
         };
         const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -345,7 +345,7 @@
             
             const confirmBtn = document.createElement('button');
             confirmBtn.textContent = '삭제';
-            confirmBtn.className = 'bg-red-500 text-white py-2 px-4 rounded-full hover:bg-red-600 transition-colors';
+            confirmBtn.className = 'bg-red-500 text-white py-2 px-4 rounded-full hover:bg-red-700 transition-colors';
             confirmBtn.onclick = () => {
                 notificationModal.classList.add('hidden');
                 onConfirm();
@@ -514,8 +514,8 @@
                         };
                     } else {
                         lastDayEndPoint = {
-                             name: '제주국제공항',
-                             coords: { lat: '33.511335', lng: '126.492759' }
+                             name: '제주공항 주차장출입구',
+                             coords: { lat: '33.507421', lng: '126.494208' }
                         };
                     }
                 }
@@ -806,7 +806,8 @@
                 if (destination.coords && currentPoint.coords) {
                     const travelResult = await getDrivingDuration(currentPoint, destination);
                     travelDuration = travelResult.duration;
-                    routeLink = `https://map.kakao.com/link/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
+                    // Corrected: Use the proper link format for single routes
+                    routeLink = `https://map.kakao.com/link/from/${segmentFrom.name},${segmentFrom.coords.lat},${segmentFrom.coords.lng}/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
                 }
                 
                 const arrivalTime = new Date(currentTime.getTime() + travelDuration * 60 * 1000);
@@ -852,7 +853,7 @@
         }
 
         async function getDrivingDuration(start, end) {
-            const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${start.coords.lng},${start.coords.lat}&destination=${end.coords.lng},${end.coords.lng}`;
+            const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${start.coords.lng},${start.coords.lat}&destination=${end.coords.lng},${end.coords.lat}`;
             try {
                 const response = await fetch(url, {
                     method: 'GET',
