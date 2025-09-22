@@ -293,23 +293,16 @@
                 db = firebase.getFirestore(firebaseApp);
                 auth = firebase.getAuth(firebaseApp);
                 
-                if (initialAuthToken) {
-                    await firebase.signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await firebase.signInAnonymously(auth);
-                }
-                
-                firebase.onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        // 모든 사용자가 동일한 공용 ID를 사용하도록 설정
-                        userId = 'shared-travel-team';
-                        isAuthReady = true;
-                        addDay();
-                    }
-                });
+                // Set up the shared user ID for all users. No auth flow needed.
+                userId = 'shared-travel-team';
+                isAuthReady = true;
+                addDay();
 
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
+                // In case of an error, still set isAuthReady to allow some functionality.
+                isAuthReady = true;
+                addDay();
             }
         }
         
