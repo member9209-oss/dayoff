@@ -28,7 +28,7 @@
             onSnapshot,
             collection,
             query,
-            where, // Added 'where' to the exposed methods
+            where,
             getDocs
         };
     </script>
@@ -273,7 +273,7 @@
         const cancelLoadBtn = document.getElementById('cancel-load-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
         
-        let __app_id = 'default-app-id'; // Add a fallback for local testing
+        let __app_id = 'default-app-id';
         if (typeof window.__app_id !== 'undefined') {
             __app_id = window.__app_id;
         }
@@ -289,19 +289,26 @@
         window.onload = async function() {
             try {
                 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-                
                 const firebaseApp = firebase.initializeApp(firebaseConfig);
                 db = firebase.getFirestore(firebaseApp);
                 auth = firebase.getAuth(firebaseApp);
                 
-                // Set up the shared user ID for all users. No auth flow needed.
-                userId = 'shared-travel-team';
-                isAuthReady = true;
-                addDay();
-
+                // Use onAuthStateChanged to ensure authentication is ready
+                firebase.onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        console.log('User signed in:', user.uid);
+                        userId = user.uid;
+                    } else {
+                        console.log('No user signed in, signing in anonymously...');
+                        await firebase.signInAnonymously(auth);
+                        userId = auth.currentUser?.uid || 'default-user';
+                    }
+                    isAuthReady = true;
+                    console.log('Auth is ready. User ID:', userId);
+                    addDay();
+                });
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
-                // In case of an error, still set isAuthReady to allow some functionality.
                 isAuthReady = true;
                 addDay();
             }
@@ -1053,6 +1060,11 @@
         });
 
         confirmSaveBtn.addEventListener('click', async () => {
+            if (!isAuthReady || !userId) {
+                showNotification('인증이 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+
             const filename = filenameInput.value.trim();
             if (!filename) {
                 showNotification('파일명을 입력해주세요.');
@@ -1062,7 +1074,7 @@
             const data = {
                 dayCount: dayCount,
                 schedules: [],
-                userId: userId, // 이 필드는 더 이상 불러오기 필터로 사용되지 않습니다.
+                userId: userId,
                 fileName: filename
             };
 
@@ -1098,8 +1110,8 @@
             }
 
             try {
-                // Corrected path to use __app_id
-                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
+                // Change path to user's private collection
+                const docRef = firebase.doc(db, `artifacts/${__app_id}/users/${userId}/private-plans`, fileId);
                 await firebase.setDoc(docRef, data);
                 hideSaveLoadModal();
                 showNotification(`'${filename}' 파일이 성공적으로 저장되었습니다.`);
@@ -1126,10 +1138,14 @@
         });
 
         async function renderFileList() {
+            if (!isAuthReady || !userId) {
+                fileList.innerHTML = '<li class="p-2 text-red-500">인증 문제로 파일을 불러올 수 없습니다.</li>';
+                return;
+            }
             fileList.innerHTML = '';
             try {
-                // Corrected path to use __app_id
-                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`));
+                // Change path to user's private collection
+                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/users/${userId}/private-plans`));
                 const querySnapshot = await firebase.getDocs(q);
                 
                 if (querySnapshot.empty) {
@@ -1164,14 +1180,14 @@
                 const fileId = deleteBtn.dataset.fileId;
                 showConfirmation(`파일을 정말 삭제하시겠습니까?`, async () => {
                     try {
-                        // Corrected path to use __app_id
-                        const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
+                        // Change path to user's private collection
+                        const docRef = firebase.doc(db, `artifacts/${__app_id}/users/${userId}/private-plans`, fileId);
                         await firebase.deleteDoc(docRef);
                         showNotification('파일이 성공적으로 삭제되었습니다.');
                         renderFileList();
                     } catch (error) {
-                console.error("Error deleting document: ", error);
-                showNotification("파일 삭제에 실패했습니다. 다시 시도해주세요.");
+                        console.error("Error deleting document: ", error);
+                        showNotification("파일 삭제에 실패했습니다. 다시 시도해주세요.");
                     }
                 });
             } else if (loadBtn) {
@@ -1182,8 +1198,8 @@
         
         async function loadFileFromFileId(fileId) {
             try {
-                // Corrected path to use __app_id
-                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
+                // Change path to user's private collection
+                const docRef = firebase.doc(db, `artifacts/${__app_id}/users/${userId}/private-plans`, fileId);
                 const docSnap = await firebase.getDoc(docRef);
 
                 if (!docSnap.exists()) {
