@@ -301,7 +301,7 @@
                 
                 firebase.onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        // All users will use the same public ID for collaboration
+                        // 모든 사용자가 동일한 공용 ID를 사용하도록 설정
                         userId = 'shared-travel-team';
                         isAuthReady = true;
                         addDay();
@@ -1068,7 +1068,7 @@
             const data = {
                 dayCount: dayCount,
                 schedules: [],
-                userId: userId,
+                userId: userId, // 이 필드는 더 이상 불러오기 필터로 사용되지 않습니다.
                 fileName: filename
             };
 
@@ -1133,7 +1133,8 @@
         async function renderFileList() {
             fileList.innerHTML = '';
             try {
-                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`), firebase.where("userId", "==", userId));
+                // userId 필터를 제거하여 모든 파일을 불러옴
+                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`));
                 const querySnapshot = await firebase.getDocs(q);
                 
                 if (querySnapshot.empty) {
