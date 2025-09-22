@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동선계획</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Expose Firebase services to the global scope for the main script
+        window.firebase = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc,
+            deleteDoc,
+            onSnapshot,
+            collection,
+            query,
+            where, // Added 'where' to the exposed methods
+            getDocs
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .input-container {
+            position: relative;
+        }
+        .autocomplete-list {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .autocomplete-list.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .autocomplete-list li {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f4f8;
+        }
+        .autocomplete-list li:hover {
+            background-color: #f7fafc;
+        }
+        .autocomplete-list li:last-child {
+            border-bottom: none;
+        }
+        .address-name {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-top: 0.25rem;
+        }
+        .draggable-place {
+            cursor: grab;
+        }
+        .dragging {
+            opacity: 0.5;
+        }
+        .place-row .place-name-input {
+            width: 35%;
+        }
+        .place-row .stay-duration-input {
+            width: 15%;
+        }
+        .place-row .remark-input {
+            width: 40%;
+        }
+        .no-select {
+            user-select: none;
+        }
+        .results-table th, .results-table td {
+            padding: 0.75rem 1rem;
+        }
+        .results-table th:nth-child(1), .results-table td:nth-child(1) { width: 25%; }
+        .results-table th:nth-child(2), .results-table td:nth-child(2) { width: 15%; }
+        .results-table th:nth-child(3), .results-table td:nth-child(3) { width: 30%; }
+        .results-table th:nth-child(4), .results-table td:nth-child(4) { width: 30%; }
+        .results-table .place-row td {
+            font-weight: bold;
+        }
+        .capture-card {
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .capture-header {
+            background-color: #e0f2fe;
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+            padding: 1rem 1.5rem;
+            color: #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .capture-table-container {
+            padding: 1.5rem;
+        }
+        .capture-table th, .capture-table td {
+            padding: 0.75rem;
+        }
+        .capture-table thead {
+            background-color: #f3f4f6;
+        }
+        .capture-table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .file-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .place-row {
+                flex-wrap: wrap;
+            }
+            .place-row > div {
+                width: 100%;
+            }
+            .place-row .place-name-input,
+            .place-row .stay-duration-input,
+            .place-row .remark-input {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="container">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-800">동선계획</h1>
+            <p class="text-lg text-gray-500 mt-2">여행 일정을 효율적으로 계획해 보세요.</p>
+        </header>
+
+        <div id="app" class="space-y-8">
+            <div class="flex justify-center gap-4 mb-8">
+                <button id="save-btn" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-save mr-2"></i>저장하기
+                </button>
+                <button id="load-btn" class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-500 transition-colors">
+                    <i class="fas fa-folder-open mr-2"></i>불러오기
+                </button>
+            </div>
+            
+            <div id="day-container" class="space-y-8">
+                <!-- Day blocks will be added here -->
+            </div>
+
+            <div class="flex justify-center gap-4 mt-8">
+                <button id="add-day-btn" class="bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>일정 추가
+                </button>
+                <button id="remove-day-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-600 transition-colors">
+                    <i class="fas fa-minus mr-2"></i>일정 삭제
+                </button>
+                <button id="calculate-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-600 transition-colors">
+                    <i class="fas fa-route mr-2"></i>동선 계산
+                </button>
+            </div>
+
+            <div id="results" class="mt-8 hidden">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">여행 동선 결과</h2>
+                <div id="results-container" class="space-y-6">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification modal -->
+        <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
+                <p id="notification-message" class="text-gray-800 text-lg"></p>
+                <div id="modal-button-container" class="mt-6 flex justify-center gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Save/Load modal -->
+        <div id="save-load-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-xl p-8 max-w-lg w-full text-center shadow-2xl">
+                <h3 id="save-load-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
+                <div id="save-content" class="space-y-4 hidden">
+                    <input type="text" id="filename-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="공유할 파일명 입력 (예: 제주-연수-2025)">
+                    <p class="text-sm text-gray-600 text-left">파일명을 입력하면 공유 가능한 ID가 생성됩니다.</p>
+                    <div class="flex justify-center gap-2">
+                        <button id="confirm-save-btn" class="bg-green-500 text-white py-2 px-4 rounded-full hover:bg-green-600">저장</button>
+                        <button id="cancel-save-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
+                    </div>
+                </div>
+                <div id="load-content" class="space-y-4 hidden">
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-left text-gray-700">파일 불러오기</h4>
+                        <ul id="file-list" class="text-left max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2"></ul>
+                    </div>
+                    <button id="cancel-load-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+            <p class="text-white text-lg">동선 계산 중...</p>
+        </div>
+
+    </div>
+
+    <script>
+        const KAKAO_API_KEY = '569bb7ab8cbe696339ba922fa5dc101a';
+        
+        let db;
+        let auth;
+        let userId;
+        let isAuthReady = false;
+
+        const appElement = document.getElementById('app');
+        const dayContainer = document.getElementById('day-container');
+        const addDayBtn = document.getElementById('add-day-btn');
+        const removeDayBtn = document.getElementById('remove-day-btn');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const loadBtn = document.getElementById('load-btn');
+        const resultsDiv = document.getElementById('results');
+        const resultsContainer = document.getElementById('results-container');
+        const notificationModal = document.getElementById('notification-modal');
+        const notificationMessage = document.getElementById('notification-message');
+        const modalButtonContainer = document.getElementById('modal-button-container');
+        const saveLoadModal = document.getElementById('save-load-modal');
+        const saveLoadTitle = document.getElementById('save-load-title');
+        const saveContent = document.getElementById('save-content');
+        const loadContent = document.getElementById('load-content');
+        const filenameInput = document.getElementById('filename-input');
+        const confirmSaveBtn = document.getElementById('confirm-save-btn');
+        const cancelSaveBtn = document.getElementById('cancel-save-btn');
+        const fileList = document.getElementById('file-list');
+        const cancelLoadBtn = document.getElementById('cancel-load-btn');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+
+        let dayCount = 0;
+        let lastDayEndPoint = {
+            name: '제주국제공항',
+            coords: { lat: '33.511335', lng: '126.492759' }
+        };
+        const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
+
+        // --- Firebase Initialization and Auth ---
+        window.onload = async function() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                
+                const firebaseApp = firebase.initializeApp(firebaseConfig);
+                db = firebase.getFirestore(firebaseApp);
+                auth = firebase.getAuth(firebaseApp);
+                
+                if (initialAuthToken) {
+                    await firebase.signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await firebase.signInAnonymously(auth);
+                }
+                
+                firebase.onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        // All users will use the same public ID for collaboration
+                        userId = 'shared-travel-team';
+                        isAuthReady = true;
+                        addDay();
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+            }
+        }
+        
+        // --- Helper functions ---
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        function clearModalButtons() {
+            modalButtonContainer.innerHTML = '';
+        }
+
+        function showNotification(message) {
+            clearModalButtons();
+            notificationMessage.textContent = message;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '확인';
+            closeBtn.className = 'bg-indigo-500 text-white py-2 px-4 rounded-full hover:bg-indigo-600 transition-colors';
+            closeBtn.onclick = () => notificationModal.classList.add('hidden');
+            
+            modalButtonContainer.appendChild(closeBtn);
+            notificationModal.classList.remove('hidden');
+        }
+
+        function showConfirmation(message, onConfirm) {
+            clearModalButtons();
+            notificationMessage.textContent = message;
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = '삭제';
+            confirmBtn.className = 'bg-red-500 text-white py-2 px-4 rounded-full hover:bg-red-600 transition-colors';
+            confirmBtn.onclick = () => {
+                notificationModal.classList.add('hidden');
+                onConfirm();
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = '취소';
+            cancelBtn.className = 'bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500 transition-colors';
+            cancelBtn.onclick = () => notificationModal.classList.add('hidden');
+
+            modalButtonContainer.appendChild(confirmBtn);
+            modalButtonContainer.appendChild(cancelBtn);
+            notificationModal.classList.remove('hidden');
+        }
+
+        function showSaveLoadModal(mode) {
+            saveLoadModal.classList.remove('hidden');
+            if (mode === 'save') {
+                saveLoadTitle.textContent = '파일 저장';
+                saveContent.classList.remove('hidden');
+                loadContent.classList.add('hidden');
+                filenameInput.value = '';
+            } else if (mode === 'load') {
+                saveLoadTitle.textContent = '파일 불러오기';
+                saveContent.classList.add('hidden');
+                loadContent.classList.remove('hidden');
+                renderFileList();
+            }
+        }
+
+        function hideSaveLoadModal() {
+            saveLoadModal.classList.add('hidden');
+        }
+
+        function addDay() {
+            dayCount++;
+            const dayBlock = document.createElement('div');
+            dayBlock.id = `day-${dayCount}`;
+            dayBlock.className = 'p-6 bg-white rounded-2xl shadow-md border-t-4 border-indigo-500 space-y-4';
+
+            let timeOptions = '';
+            for (let h = 0; h < 24; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    timeOptions += `<option value="${time}">${time}</option>`;
+                }
+            }
+
+            let defaultDate = '';
+            let defaultStartName = '';
+            let defaultStartLat = '';
+            let defaultStartLng = '';
+
+            if (dayCount === 1) {
+                defaultStartName = lastDayEndPoint.name;
+                defaultStartLat = lastDayEndPoint.coords.lat;
+                defaultStartLng = lastDayEndPoint.coords.lng;
+            } else {
+                const lastDayBlock = document.getElementById(`day-${dayCount - 1}`);
+                const lastDateInput = lastDayBlock.querySelector('.date-input');
+                if (lastDateInput && lastDateInput.value) {
+                    const lastDate = new Date(lastDateInput.value);
+                    lastDate.setDate(lastDate.getDate() + 1);
+                    defaultDate = lastDate.toISOString().split('T')[0];
+                }
+
+                const lastDayPlaces = Array.from(lastDayBlock.querySelectorAll('.place-input')).filter(el => {
+                    const placeName = el.querySelector('input[placeholder="장소명 입력"]').value;
+                    const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName.toLowerCase());
+                    return !isNonAddress && el.querySelector('input[placeholder="장소명 입력"]').dataset.lat;
+                });
+
+                if (lastDayPlaces.length > 0) {
+                    const lastPlaceInput = lastDayPlaces[lastDayPlaces.length - 1].querySelector('input[placeholder="장소명 입력"]');
+                    defaultStartName = lastPlaceInput.value;
+                    defaultStartLat = lastPlaceInput.dataset.lat;
+                    defaultStartLng = lastPlaceInput.dataset.lng;
+                }
+            }
+
+            dayBlock.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-2xl font-bold text-indigo-700 w-28 no-select">${dayCount}일차</h3>
+                    <input type="date" class="date-input p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" value="${defaultDate}">
+                    <button class="add-place-btn bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>장소 추가
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4 input-container">
+                        <label for="start-point-${dayCount}" class="text-gray-700 w-28">출발 위치:</label>
+                        <input type="text" id="start-point-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="예: 제주국제공항" value="${defaultStartName}" data-lat="${defaultStartLat}" data-lng="${defaultStartLng}">
+                        <ul class="autocomplete-list"></ul>
+                    </div>
+                    <!-- Start time added back -->
+                    <div class="flex items-center gap-4 input-container">
+                        <label for="start-time-${dayCount}" class="text-gray-700 w-28">출발 시간:</label>
+                        <select id="start-time-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400">
+                           ${timeOptions}
+                        </select>
+                    </div>
+                </div>
+                <div class="space-y-4 drag-container" id="places-container-${dayCount}">
+                    <div class="flex items-center gap-4 place-input draggable-place place-row" draggable="true">
+                        <label class="text-gray-700 place-label no-select">장소 1:</label>
+                        <div class="flex-1 input-container place-name-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력">
+                            <ul class="autocomplete-list"></ul>
+                        </div>
+                        <div class="w-24 stay-duration-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)">
+                        </div>
+                        <div class="flex-1 remark-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)">
+                        </div>
+                        <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
+                    </div>
+                </div>
+            `;
+            dayContainer.appendChild(dayBlock);
+
+            const addPlaceBtn = dayBlock.querySelector('.add-place-btn');
+            addPlaceBtn.addEventListener('click', () => {
+                const placesContainer = dayBlock.querySelector(`.drag-container`);
+                const placeInput = document.createElement('div');
+                placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
+                placeInput.setAttribute('draggable', 'true');
+                placeInput.innerHTML = `
+                    <label class="text-gray-700 place-label no-select">장소:</label>
+                    <div class="flex-1 input-container place-name-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력">
+                        <ul class="autocomplete-list"></ul>
+                    </div>
+                    <div class="w-24 stay-duration-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)">
+                    </div>
+                    <div class="flex-1 remark-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)">
+                    </div>
+                    <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
+                `;
+                placesContainer.appendChild(placeInput);
+                attachAutocomplete(placeInput.querySelector('input[type="text"]'));
+                updatePlaceLabels(dayBlock);
+            });
+
+            attachAutocomplete(dayBlock.querySelector(`input[id^="start-point"]`));
+            const initialPlaceInput = dayBlock.querySelector(`.place-input input[placeholder="장소명 입력"]`);
+            attachAutocomplete(initialPlaceInput);
+            attachDeleteEvents(dayBlock);
+            attachDragAndDrop(dayBlock);
+        }
+        
+        function removeDay() {
+            if (dayCount > 1) {
+                const lastDayBlock = document.getElementById(`day-${dayCount}`);
+                dayContainer.removeChild(lastDayBlock);
+                dayCount--;
+                const lastDayBlockPlaces = document.getElementById(`day-${dayCount}`);
+                if (lastDayBlockPlaces) {
+                    const lastPlaceInput = lastDayBlockPlaces.querySelector('.place-input:last-of-type input[placeholder="장소명 입력"]');
+                    if (lastPlaceInput && lastPlaceInput.dataset.lat) {
+                        lastDayEndPoint = {
+                            name: lastPlaceInput.value,
+                            coords: { lat: lastPlaceInput.dataset.lat, lng: lastPlaceInput.dataset.lng }
+                        };
+                    } else {
+                        lastDayEndPoint = {
+                             name: '제주국제공항',
+                             coords: { lat: '33.511335', lng: '126.492759' }
+                        };
+                    }
+                }
+                
+            } else {
+                showNotification('마지막 일정은 삭제할 수 없습니다.');
+            }
+        }
+        
+        function updatePlaceLabels(dayBlock) {
+            const placesContainer = dayBlock.querySelector(`.drag-container`);
+            const placeInputs = placesContainer.querySelectorAll('.place-input');
+            placeInputs.forEach((input, index) => {
+                const label = input.querySelector('.place-label');
+                label.textContent = `장소 ${index + 1}:`;
+            });
+        }
+
+        function attachDeleteEvents(dayBlock) {
+            dayBlock.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-place-btn')) {
+                    const placeInput = e.target.closest('.place-input');
+                    if (placeInput) {
+                        placeInput.remove();
+                        updatePlaceLabels(dayBlock);
+                    }
+                }
+            });
+        }
+        
+        function attachDragAndDrop(dayBlock) {
+            const placesContainer = dayBlock.querySelector(`.drag-container`);
+            let dragSrcEl = null;
+
+            placesContainer.addEventListener('dragstart', (e) => {
+                const target = e.target.closest('.draggable-place');
+                if (target) {
+                    dragSrcEl = target;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', dragSrcEl.outerHTML);
+                    dragSrcEl.classList.add('dragging');
+                }
+            });
+
+            placesContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const target = e.target.closest('.draggable-place');
+                if (target) {
+                    const rect = target.getBoundingClientRect();
+                    const isAfter = e.clientY > rect.top + rect.height / 2;
+                    target.style.borderTop = isAfter ? '' : '2px solid #6366f1';
+                    target.style.borderBottom = isAfter ? '2px solid #6366f1' : '';
+                }
+            });
+
+            placesContainer.addEventListener('dragleave', (e) => {
+                const target = e.target.closest('.draggable-place');
+                if (target) {
+                    target.style.borderTop = '';
+                    target.style.borderBottom = '';
+                }
+            });
+
+            placesContainer.addEventListener('drop', (e) => {
+                e.stopPropagation();
+                const dropTarget = e.target.closest('.draggable-place');
+                if (dropTarget && dragSrcEl && dragSrcEl !== dropTarget) {
+                    const rect = dropTarget.getBoundingClientRect();
+                    const isAfter = e.clientY > rect.top + rect.height / 2;
+                    
+                    if (isAfter) {
+                        dropTarget.parentNode.insertBefore(dragSrcEl, dropTarget.nextSibling);
+                    } else {
+                        dropTarget.parentNode.insertBefore(dragSrcEl, dropTarget);
+                    }
+                    updatePlaceLabels(dayBlock);
+                }
+                document.querySelectorAll('.draggable-place').forEach(el => {
+                    el.style.borderTop = '';
+                    el.style.borderBottom = '';
+                    el.classList.remove('dragging');
+                });
+            });
+
+            placesContainer.addEventListener('dragend', () => {
+                 document.querySelectorAll('.draggable-place').forEach(el => {
+                    el.classList.remove('dragging');
+                });
+            });
+        }
+
+        function attachAutocomplete(inputElement) {
+            const listElement = inputElement.closest('.input-container').querySelector('.autocomplete-list');
+            let debounceTimeout;
+            let lastQuery = '';
+
+            inputElement.addEventListener('input', (e) => {
+                clearTimeout(debounceTimeout);
+                const query = e.target.value;
+                if (query.length < 2) {
+                    listElement.innerHTML = '';
+                    listElement.classList.remove('visible');
+                    delete inputElement.dataset.lat;
+                    delete inputElement.dataset.lng;
+                    return;
+                }
+
+                if (query === lastQuery) return;
+                lastQuery = query;
+
+                debounceTimeout = setTimeout(() => {
+                    searchKakaoPlaces(query, listElement);
+                }, 300);
+            });
+
+            inputElement.addEventListener('focus', () => {
+                if (listElement.children.length > 0) {
+                    listElement.classList.add('visible');
+                }
+            });
+            
+            inputElement.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (!listElement.contains(document.activeElement)) {
+                        listElement.classList.remove('visible');
+                    }
+                }, 100);
+            });
+
+            listElement.addEventListener('mousedown', (e) => {
+                const li = e.target.closest('li');
+                if (li) {
+                    const inputElement = li.closest('.input-container').querySelector('input');
+                    inputElement.value = li.dataset.name;
+                    inputElement.dataset.lat = li.dataset.lat;
+                    inputElement.dataset.lng = li.dataset.lng;
+                    listElement.classList.remove('visible');
+                }
+            });
+        }
+
+        async function searchKakaoPlaces(query, listElement) {
+            const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query)}`;
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` }
+                });
+                const data = await response.json();
+                
+                listElement.innerHTML = '';
+                if (data.documents && data.documents.length > 0) {
+                    data.documents.forEach(place => {
+                        const li = document.createElement('li');
+                        li.className = 'py-2 px-4 cursor-pointer';
+                        li.dataset.lat = place.y;
+                        li.dataset.lng = place.x;
+                        li.dataset.name = place.place_name;
+                        li.innerHTML = `
+                            <div class="font-semibold">${place.place_name}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">${place.address_name}</div>
+                        `;
+                        listElement.appendChild(li);
+                    });
+                    listElement.classList.add('visible');
+                } else {
+                    listElement.classList.remove('visible');
+                }
+            } catch (error) {
+                console.error('카카오 API 검색 오류:', error);
+                listElement.classList.remove('visible');
+            }
+        }
+        
+        addDayBtn.addEventListener('click', addDay);
+        removeDayBtn.addEventListener('click', removeDay);
+
+        calculateBtn.addEventListener('click', async () => {
+            showLoading();
+            const allSchedules = [];
+            for (let i = 1; i <= dayCount; i++) {
+                const daySchedule = { places: [] };
+                const dayBlock = document.getElementById(`day-${i}`);
+                const dateInput = dayBlock.querySelector('.date-input');
+                const startTimeInput = dayBlock.querySelector(`#start-time-${i}`); 
+                const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                
+                if (!startPointInput.value) {
+                    hideLoading();
+                    showNotification(`${i}일차 출발 위치를 입력해주세요.`);
+                    return;
+                }
+                
+                if (!startPointInput.dataset.lat || !startPointInput.dataset.lng) {
+                    hideLoading();
+                    showNotification(`"${startPointInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
+                    return;
+                }
+                
+                const dateString = dateInput.value;
+                daySchedule.date = dateString ? new Date(dateString) : null;
+
+                daySchedule.startTime = startTimeInput.value;
+                daySchedule.startPoint = {
+                    name: startPointInput.value,
+                    coords: { lat: startPointInput.dataset.lat, lng: startPointInput.dataset.lng }
+                };
+
+                const placesInputs = dayBlock.querySelectorAll(`.place-input`);
+                for (let j = 0; j < placesInputs.length; j++) {
+                    const placeInputDiv = placesInputs[j];
+                    const placeNameInput = placeInputDiv.querySelector('input[placeholder="장소명 입력"]');
+                    const stayDurationInput = placeInputDiv.querySelector('input[placeholder="체류 시간(분)"]');
+                    const remarkInput = placeInputDiv.querySelector('input[placeholder^="비고"]');
+                    
+                    if (placeNameInput.value) {
+                        const placeName = placeNameInput.value.trim().toLowerCase();
+                        const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName);
+                        
+                        if (!isNonAddress && (!placeNameInput.dataset.lat || !placeNameInput.dataset.lng)) {
+                            hideLoading();
+                             showNotification(`"${placeNameInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
+                             return;
+                        }
+
+                        if (!stayDurationInput.value.trim()) {
+                            hideLoading();
+                            showNotification(`"${placeNameInput.value}"의 체류 시간을 입력해주세요.`);
+                            return;
+                        }
+
+                        daySchedule.places.push({
+                            name: placeNameInput.value,
+                            coords: isNonAddress ? null : { lat: placeNameInput.dataset.lat, lng: placeNameInput.dataset.lng },
+                            stayDuration: stayDurationInput.value,
+                            remark: remarkInput ? remarkInput.value : ''
+                        });
+                    }
+                }
+                
+                if (daySchedule.places.length > 0) {
+                    allSchedules.push(daySchedule);
+                }
+            }
+
+            if (allSchedules.length === 0) {
+                hideLoading();
+                showNotification('일정을 추가하고 장소를 입력해주세요.');
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+            resultsDiv.classList.remove('hidden');
+            
+            for (let i = 0; i < allSchedules.length; i++) {
+                await processSchedule(allSchedules[i], i + 1);
+            }
+            hideLoading();
+        });
+
+        async function processSchedule(daySchedule, dayIndex) {
+            const { startTime, startPoint, places, date } = daySchedule;
+            
+            let travelPlan = [];
+            let currentPoint = startPoint;
+            let currentTime;
+            let waypoints = [];
+            if (date) {
+                const [hours, minutes] = startTime.split(':').map(Number);
+                currentTime = new Date(date);
+                currentTime.setHours(hours, minutes, 0, 0);
+            } else {
+                const [hours, minutes] = startTime.split(':').map(Number);
+                currentTime = new Date();
+                currentTime.setHours(hours, minutes, 0, 0);
+            }
+
+            let totalTravelDuration = 0;
+
+            for (let i = 0; i < places.length; i++) {
+                const destination = places[i];
+                let travelDuration = 0;
+                let routeLink = null;
+                
+                const segmentFrom = currentPoint;
+                const segmentTo = destination;
+
+                if (destination.coords && currentPoint.coords) {
+                    const travelResult = await getDrivingDuration(currentPoint, destination);
+                    travelDuration = travelResult.duration;
+                    routeLink = `https://map.kakao.com/link/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
+                }
+                
+                const arrivalTime = new Date(currentTime.getTime() + travelDuration * 60 * 1000);
+                totalTravelDuration += travelDuration;
+
+                const stayDurationValue = (destination.stayDuration === '일정종료' || destination.stayDuration.toLowerCase() === '일정종료') ? '일정종료' : parseInt(destination.stayDuration);
+                
+                const departureTime = (stayDurationValue !== '일정종료') ? new Date(arrivalTime.getTime() + stayDurationValue * 60 * 1000) : null;
+                
+                travelPlan.push({
+                    from: segmentFrom.name,
+                    to: segmentTo.name,
+                    travelDuration: travelDuration,
+                    arrivalTime: arrivalTime,
+                    stayDuration: stayDurationValue,
+                    departureTime: departureTime,
+                    remark: destination.remark,
+                    routeLink: routeLink
+                });
+                
+                if (stayDurationValue === '일정종료') {
+                    break;
+                }
+                
+                if (destination.coords) {
+                    currentPoint = destination;
+                    waypoints.push(currentPoint);
+                }
+                currentTime = departureTime;
+            }
+            
+            // Generate full day route link
+            const firstPlaceWithCoords = places.find(p => p.coords);
+            let fullRouteLink = null;
+            if (startPoint.coords && firstPlaceWithCoords) {
+                let originParam = `${startPoint.name},${startPoint.coords.lat},${startPoint.coords.lng}`;
+                let destinationParam = `${waypoints[waypoints.length - 1].name},${waypoints[waypoints.length - 1].coords.lat},${waypoints[waypoints.length - 1].coords.lng}`;
+                let waypointsParam = waypoints.slice(0, -1).map(wp => `${wp.name},${wp.coords.lat},${wp.coords.lng}`).join('/');
+                fullRouteLink = `https://map.kakao.com/link/to/${originParam}/via/${waypointsParam}/${destinationParam}`;
+            }
+
+            renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink);
+        }
+
+        async function getDrivingDuration(start, end) {
+            const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${start.coords.lng},${start.coords.lat}&destination=${end.coords.lng},${end.coords.lng}`;
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` }
+                });
+                const json = await response.json();
+                
+                if (json.routes && json.routes.length > 0) {
+                    const route = json.routes[0];
+                    const durationInSeconds = route.summary.duration;
+                    return {
+                        duration: Math.floor(durationInSeconds / 60)
+                    };
+                }
+            } catch (error) {
+                console.error('카카오 내비 API 호출 실패:', error);
+            }
+            return { duration: 0 };
+        }
+        
+        function renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink) {
+            const dayResultBlock = document.createElement('div');
+            dayResultBlock.id = `result-day-${dayIndex}`;
+            dayResultBlock.className = 'capture-card';
+            
+            const dayTitle = document.createElement('div');
+            dayTitle.className = 'capture-header text-xl font-bold';
+            
+            let displayTitle = `${dayIndex}일차`;
+            if (daySchedule.date) {
+                const month = daySchedule.date.getMonth() + 1;
+                const day = daySchedule.date.getDate();
+                const dayString = dayOfWeek[daySchedule.date.getDay()];
+                displayTitle += ` ${month}/${day}(${dayString})`;
+            }
+
+            dayTitle.innerHTML = `
+                <span class="text-gray-800">${displayTitle}</span>
+                <div class="flex gap-2">
+                    ${fullRouteLink ? `<a href="${fullRouteLink}" target="_blank" class="bg-blue-500 text-white text-sm py-1 px-3 rounded-full hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-map mr-1"></i>전체 경로 보기
+                    </a>` : ''}
+                    <button class="bg-blue-500 text-white text-sm py-1 px-3 rounded-full hover:bg-blue-600 transition-colors capture-btn" onclick="captureElement('result-day-${dayIndex}', '${displayTitle}')">
+                        <i class="fas fa-camera mr-1"></i>캡처하기
+                    </button>
+                </div>
+            `;
+            dayResultBlock.appendChild(dayTitle);
+
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'capture-table-container';
+            
+            const resultsTable = document.createElement('table');
+            resultsTable.className = 'w-full text-left table-auto';
+            resultsTable.innerHTML = `
+                <thead>
+                    <tr class="text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">시간</th>
+                        <th class="py-3 px-6 text-left">소요시간</th>
+                        <th class="py-3 px-6 text-left">장소/경로</th>
+                        <th class="py-3 px-6 text-left">비고</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                </tbody>
+            `;
+            const tbody = resultsTable.querySelector('tbody');
+
+            let lastTime;
+            if (daySchedule.date) {
+                const [hours, minutes] = daySchedule.startTime.split(':').map(Number);
+                lastTime = new Date(daySchedule.date.getFullYear(), daySchedule.date.getMonth(), daySchedule.date.getDate(), hours, minutes);
+            } else {
+                const [hours, minutes] = daySchedule.startTime.split(':').map(Number);
+                lastTime = new Date();
+                lastTime.setHours(hours, minutes, 0, 0);
+            }
+            
+            let totalStayMinutes = 0;
+            let totalElapsedTime = 0;
+
+            const startRow = document.createElement('tr');
+            startRow.className = 'border-b border-gray-200 hover:bg-gray-100';
+            startRow.innerHTML = `
+                <td class="py-3 px-6 text-left whitespace-nowrap">${Utilities.formatTime(lastTime)}</td>
+                <td class="py-3 px-6 text-left"></td>
+                <td class="py-3 px-6 text-left font-bold text-gray-800">${daySchedule.startPoint.name} (출발)</td>
+                <td class="py-3 px-6 text-left"></td>
+            `;
+            tbody.appendChild(startRow);
+
+            travelPlan.forEach(item => {
+                const travelStartTime = lastTime;
+                const travelEndTime = item.arrivalTime;
+                
+                const travelRow = document.createElement('tr');
+                travelRow.className = 'bg-gray-50 border-b border-gray-200 hover:bg-gray-100';
+                travelRow.innerHTML = `
+                    <td class="py-2 px-6 text-left">${Utilities.formatTime(travelStartTime)} ~ ${Utilities.formatTime(travelEndTime)}</td>
+                    <td class="py-2 px-6 text-left text-gray-600">${item.travelDuration}분</td>
+                    <td class="py-2 px-6 text-left">${item.from} → ${item.to}
+                        ${item.routeLink ? `<a href="${item.routeLink}" target="_blank" class="text-blue-500 hover:underline ml-2"><i class="fas fa-map-marker-alt"></i></a>` : ''}
+                    </td>
+                    <td class="py-2 px-6 text-left"></td>
+                `;
+
+                tbody.appendChild(travelRow);
+                
+                totalElapsedTime += item.travelDuration;
+
+                const placeRow = document.createElement('tr');
+                placeRow.className = 'border-b border-gray-200 hover:bg-gray-100 font-medium text-gray-800';
+                
+                const stayDurationText = item.stayDuration === '일정종료' ? '일정 종료' : `${item.stayDuration}분`;
+                if (item.stayDuration !== '일정종료' && !isNaN(parseInt(item.stayDuration))) {
+                    totalStayMinutes += parseInt(item.stayDuration);
+                    totalElapsedTime += parseInt(item.stayDuration);
+                }
+
+                const arrivalTimeText = `${Utilities.formatTime(item.arrivalTime)} ~ ${item.departureTime ? Utilities.formatTime(item.departureTime) : '일정 종료'}`;
+
+                placeRow.innerHTML = `
+                    <td class="py-3 px-6 text-left">${arrivalTimeText}</td>
+                    <td class="py-3 px-6 text-left">${stayDurationText}</td>
+                    <td class="py-3 px-6 text-left font-bold">${item.to}</td>
+                    <td class="py-3 px-6 text-left">${item.remark || ''}</td>
+                `;
+                tbody.appendChild(placeRow);
+                
+                if (item.departureTime) {
+                    lastTime = item.departureTime;
+                }
+            });
+
+            tableContainer.appendChild(resultsTable);
+            
+            const finalTotalDuration = totalTravelDuration + totalStayMinutes;
+            const summary = document.createElement('div');
+            summary.className = 'mt-6 text-center text-gray-700 font-semibold';
+            summary.innerHTML = `
+                <p class="text-xl no-select">
+                    총 소요시간: <span class="text-green-600 font-bold">${Utilities.formatDuration(finalTotalDuration)}</span>
+                    <span class="text-gray-500 font-normal">(총 이동시간: ${Utilities.formatDuration(totalTravelDuration)})</span>
+                </p>
+            `;
+            tableContainer.appendChild(summary);
+
+            dayResultBlock.appendChild(tableContainer);
+            resultsContainer.appendChild(dayResultBlock);
+        }
+        
+        const Utilities = {
+            formatTime: (date) => {
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                return `${hours}:${minutes}`;
+            },
+            formatDuration: (totalMinutes) => {
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                return `${hours > 0 ? `${hours}시간 ` : ''}${minutes}분`;
+            }
+        };
+
+        // Capture function
+        window.captureElement = function(elementId, filename) {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                showNotification('캡처할 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+            // Temporarily hide the capture button
+            const captureBtn = element.querySelector('.capture-btn');
+            if (captureBtn) {
+                captureBtn.style.display = 'none';
+            }
+
+            html2canvas(element, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${filename}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Show the button again
+                if (captureBtn) {
+                    captureBtn.style.display = '';
+                }
+
+                showNotification(`${filename}이(가) 성공적으로 캡처되었습니다.`);
+            });
+        };
+
+        // Save and Load functionality
+        saveBtn.addEventListener('click', () => {
+             if (!isAuthReady) {
+                showNotification('인증 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            showSaveLoadModal('save');
+        });
+
+        confirmSaveBtn.addEventListener('click', async () => {
+            const filename = filenameInput.value.trim();
+            if (!filename) {
+                showNotification('파일명을 입력해주세요.');
+                return;
+            }
+            const fileId = `file-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
+            const data = {
+                dayCount: dayCount,
+                schedules: [],
+                userId: userId,
+                fileName: filename
+            };
+
+            for (let i = 1; i <= dayCount; i++) {
+                const dayBlock = document.getElementById(`day-${i}`);
+                const dateInput = dayBlock.querySelector('.date-input');
+                const startTimeInput = dayBlock.querySelector(`#start-time-${i}`);
+                const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const placesInputs = dayBlock.querySelectorAll(`.place-input`);
+
+                const placesData = [];
+                placesInputs.forEach(placeInputDiv => {
+                    const placeNameInput = placeInputDiv.querySelector('input[placeholder="장소명 입력"]');
+                    const stayDurationInput = placeInputDiv.querySelector('input[placeholder="체류 시간(분)"]');
+                    const remarkInput = placeInputDiv.querySelector('input[placeholder^="비고"]');
+                    placesData.push({
+                        name: placeNameInput.value,
+                        coords: { lat: placeNameInput.dataset.lat || '', lng: placeNameInput.dataset.lng || '' },
+                        stayDuration: stayDurationInput.value,
+                        remark: remarkInput ? remarkInput.value : ''
+                    });
+                });
+
+                data.schedules.push({
+                    date: dateInput.value,
+                    startTime: startTimeInput.value,
+                    startPoint: {
+                        name: startPointInput.value,
+                        coords: { lat: startPointInput.dataset.lat || '', lng: startPointInput.dataset.lng || '' }
+                    },
+                    places: placesData
+                });
+            }
+
+            try {
+                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
+                await firebase.setDoc(docRef, data);
+                hideSaveLoadModal();
+                showNotification(`'${filename}' 파일이 성공적으로 저장되었습니다.`);
+            } catch (error) {
+                console.error("Error saving document: ", error);
+                showNotification("파일 저장에 실패했습니다. 다시 시도해주세요.");
+            }
+        });
+        
+        cancelSaveBtn.addEventListener('click', () => {
+            hideSaveLoadModal();
+        });
+
+        loadBtn.addEventListener('click', () => {
+            if (!isAuthReady) {
+                showNotification('인증 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            showSaveLoadModal('load');
+        });
+
+        cancelLoadBtn.addEventListener('click', () => {
+            hideSaveLoadModal();
+        });
+
+        async function renderFileList() {
+            fileList.innerHTML = '';
+            try {
+                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`), firebase.where("userId", "==", userId));
+                const querySnapshot = await firebase.getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    fileList.innerHTML = '<li class="p-2 text-gray-500">저장된 파일이 없습니다.</li>';
+                    return;
+                }
+
+                querySnapshot.forEach(doc => {
+                    const filename = doc.data().fileName || '제목 없음';
+                    const fileId = doc.id;
+                    const li = document.createElement('li');
+                    li.className = 'py-2 px-4 cursor-pointer hover:bg-gray-100 rounded-lg flex justify-between items-center file-list-item';
+                    li.innerHTML = `
+                        <span class="load-file-btn" data-file-id="${fileId}">${filename}</span>
+                        <button class="text-red-500 hover:text-red-700 delete-file-btn" data-file-id="${fileId}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    fileList.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Error rendering file list:", error);
+                fileList.innerHTML = '<li class="p-2 text-red-500">파일 목록을 불러오는 데 실패했습니다.</li>';
+            }
+        }
+        
+        fileList.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-file-btn');
+            const loadBtn = e.target.closest('.load-file-btn');
+
+            if (deleteBtn) {
+                const fileId = deleteBtn.dataset.fileId;
+                showConfirmation(`파일을 정말 삭제하시겠습니까?`, async () => {
+                    try {
+                        const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
+                        await firebase.deleteDoc(docRef);
+                        showNotification('파일이 성공적으로 삭제되었습니다.');
+                        renderFileList();
+                    } catch (error) {
+                console.error("Error deleting document: ", error);
+                showNotification("파일 삭제에 실패했습니다. 다시 시도해주세요.");
+                    }
+                });
+            } else if (loadBtn) {
+                const fileId = loadBtn.dataset.fileId;
+                loadFileFromFileId(fileId);
+            }
+        });
+        
+        async function loadFileFromFileId(fileId) {
+            try {
+                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
+                const docSnap = await firebase.getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    showNotification('파일을 찾을 수 없습니다.');
+                    return;
+                }
+                const data = docSnap.data();
+
+                // Clear current days
+                dayContainer.innerHTML = '';
+                dayCount = 0;
+
+                data.schedules.forEach(schedule => {
+                    addDay();
+                    const dayBlock = document.getElementById(`day-${dayCount}`);
+                    dayBlock.querySelector('.date-input').value = schedule.date;
+                    dayBlock.querySelector(`#start-time-${dayCount}`).value = schedule.startTime;
+                    
+                    const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                    startPointInput.value = schedule.startPoint.name;
+                    startPointInput.dataset.lat = schedule.startPoint.coords.lat;
+                    startPointInput.dataset.lng = schedule.startPoint.coords.lng;
+                    
+                    const placesContainer = dayBlock.querySelector('.drag-container');
+                    placesContainer.innerHTML = '';
+
+                    schedule.places.forEach((place, index) => {
+                        const placeInput = document.createElement('div');
+                        placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
+                        placeInput.setAttribute('draggable', 'true');
+                        placeInput.innerHTML = `
+                            <label class="text-gray-700 place-label no-select">장소 ${index + 1}:</label>
+                            <div class="flex-1 input-container place-name-input">
+                                <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력" value="${place.name}" data-lat="${place.coords.lat}" data-lng="${place.coords.lng}">
+                                <ul class="autocomplete-list"></ul>
+                            </div>
+                            <div class="w-24 stay-duration-input">
+                                <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)" value="${place.stayDuration}">
+                            </div>
+                            <div class="flex-1 remark-input">
+                                <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)" value="${place.remark}">
+                            </div>
+                            <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
+                        `;
+                        placesContainer.appendChild(placeInput);
+                        attachAutocomplete(placeInput.querySelector('input[type="text"]'));
+                    });
+                    updatePlaceLabels(dayBlock);
+                    attachDeleteEvents(dayBlock);
+                    attachDragAndDrop(dayBlock);
+                });
+                hideSaveLoadModal();
+                showNotification(`'${data.fileName}' 파일이 성공적으로 불러와졌습니다.`);
+
+            } catch (error) {
+                console.error("Error loading document:", error);
+                showNotification("파일을 불러오는 데 실패했습니다. 다시 시도해주세요.");
+            }
+        }
+    </script>
+</body>
+</html>
