@@ -165,92 +165,108 @@
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <div class="container">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-gray-800">동선계획</h1>
-            <p class="text-lg text-gray-500 mt-2">여행 일정을 효율적으로 계획해 보세요.</p>
-        </header>
+    <!-- Password modal -->
+    <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">비밀번호를 입력하세요</h3>
+            <input type="password" id="password-input" class="w-full p-3 border border-gray-300 rounded-lg text-center" placeholder="비밀번호" onkeydown="handlePasswordKey(event)">
+            <p id="password-error" class="text-sm text-red-500 mt-2 hidden">비밀번호가 올바르지 않습니다.</p>
+            <button id="password-submit-btn" class="mt-4 bg-indigo-500 text-white font-bold py-2 px-4 rounded-full hover:bg-indigo-600 transition-colors">확인</button>
+        </div>
+    </div>
 
-        <div id="app" class="space-y-8">
-            <div class="flex justify-center gap-4 mb-8">
-                <button id="save-btn" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-800 transition-colors">
-                    <i class="fas fa-save mr-2"></i>저장하기
-                </button>
-                <button id="load-btn" class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-500 transition-colors">
-                    <i class="fas fa-folder-open mr-2"></i>불러오기
-                </button>
+    <div id="main-content" class="hidden">
+        <div class="container">
+            <header class="text-center mb-10">
+                <h1 class="text-4xl font-bold text-gray-800">동선계획</h1>
+                <p class="text-lg text-gray-500 mt-2">여행 일정을 효율적으로 계획해 보세요.</p>
+            </header>
+
+            <div id="app" class="space-y-8">
+                <div class="flex justify-center gap-4 mb-8">
+                    <button id="save-btn" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-800 transition-colors">
+                        <i class="fas fa-save mr-2"></i>저장하기
+                    </button>
+                    <button id="load-btn" class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-500 transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>불러오기
+                    </button>
+                </div>
+                
+                <div id="day-container" class="space-y-8">
+                    <!-- Day blocks will be added here -->
+                </div>
+
+                <div class="flex justify-center gap-4 mt-8">
+                    <button id="add-day-btn" class="bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>일정 추가
+                    </button>
+                    <button id="remove-day-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-minus mr-2"></i>일정 삭제
+                    </button>
+                    <button id="calculate-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-route mr-2"></i>동선 계산
+                    </button>
+                </div>
+
+                <div id="results" class="mt-8 hidden">
+                    <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">여행 동선 결과</h2>
+                    <div id="results-container" class="space-y-6">
+                        <!-- Results will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification modal -->
+            <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+                <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
+                    <p id="notification-message" class="text-gray-800 text-lg"></p>
+                    <div id="modal-button-container" class="mt-6 flex justify-center gap-2"></div>
+                </div>
+            </div>
+
+            <!-- Save/Load modal -->
+            <div id="save-load-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+                <div class="bg-white rounded-xl p-8 max-w-lg w-full text-center shadow-2xl">
+                    <h3 id="save-load-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
+                    <div id="save-content" class="space-y-4 hidden">
+                        <input type="text" id="filename-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="공유할 파일명을 입력해 주세요.">
+                        <div class="flex justify-center gap-2">
+                            <button id="confirm-save-btn" class="bg-green-500 text-white py-2 px-4 rounded-full hover:bg-green-600">저장</button>
+                            <button id="cancel-save-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
+                        </div>
+                    </div>
+                    <div id="load-content" class="space-y-4 hidden">
+                        <div class="space-y-2">
+                            <h4 class="font-semibold text-left text-gray-700">파일 불러오기</h4>
+                            <ul id="file-list" class="text-left max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2"></ul>
+                        </div>
+                        <button id="cancel-load-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
+                    </div>
+                </div>
             </div>
             
-            <div id="day-container" class="space-y-8">
-                <!-- Day blocks will be added here -->
-            </div>
-
-            <div class="flex justify-center gap-4 mt-8">
-                <button id="add-day-btn" class="bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition-colors">
-                    <i class="fas fa-plus mr-2"></i>일정 추가
-                </button>
-                <button id="remove-day-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-600 transition-colors">
-                    <i class="fas fa-minus mr-2"></i>일정 삭제
-                </button>
-                <button id="calculate-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-600 transition-colors">
-                    <i class="fas fa-route mr-2"></i>동선 계산
-                </button>
-            </div>
-
-            <div id="results" class="mt-8 hidden">
-                <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">여행 동선 결과</h2>
-                <div id="results-container" class="space-y-6">
-                    <!-- Results will be displayed here -->
-                </div>
+            <!-- Loading overlay -->
+            <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+                <p class="text-white text-lg">동선 계산 중...</p>
             </div>
         </div>
-
-        <!-- Notification modal -->
-        <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-            <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
-                <p id="notification-message" class="text-gray-800 text-lg"></p>
-                <div id="modal-button-container" class="mt-6 flex justify-center gap-2"></div>
-            </div>
-        </div>
-
-        <!-- Save/Load modal -->
-        <div id="save-load-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-            <div class="bg-white rounded-xl p-8 max-w-lg w-full text-center shadow-2xl">
-                <h3 id="save-load-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
-                <div id="save-content" class="space-y-4 hidden">
-                    <input type="text" id="filename-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="공유할 파일명을 입력해 주세요.">
-                    <div class="flex justify-center gap-2">
-                        <button id="confirm-save-btn" class="bg-green-500 text-white py-2 px-4 rounded-full hover:bg-green-600">저장</button>
-                        <button id="cancel-save-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
-                    </div>
-                </div>
-                <div id="load-content" class="space-y-4 hidden">
-                    <div class="space-y-2">
-                        <h4 class="font-semibold text-left text-gray-700">파일 불러오기</h4>
-                        <ul id="file-list" class="text-left max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2"></ul>
-                    </div>
-                    <button id="cancel-load-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Loading overlay -->
-        <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden">
-            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-            <p class="text-white text-lg">동선 계산 중...</p>
-        </div>
-
     </div>
 
     <script>
         const KAKAO_API_KEY = '569bb7ab8cbe696339ba922fa5dc101a';
+        const CORRECT_PASSWORD = '2222'; // 비밀번호 설정
         
         let db;
         let auth;
-        let userId;
         let isAuthReady = false;
 
-        const appElement = document.getElementById('app');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        const passwordError = document.getElementById('password-error');
+        const mainContent = document.getElementById('main-content');
+        
         const dayContainer = document.getElementById('day-container');
         const addDayBtn = document.getElementById('add-day-btn');
         const removeDayBtn = document.getElementById('remove-day-btn');
@@ -285,8 +301,18 @@
         };
         const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
-        // --- Firebase Initialization and Auth ---
-        window.onload = async function() {
+        // --- Password Check and Main Content Initialization ---
+        function checkPasswordAndInitialize() {
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                passwordModal.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                initializeFirebase();
+            } else {
+                passwordError.classList.remove('hidden');
+            }
+        }
+
+        async function initializeFirebase() {
             try {
                 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
                 const firebaseApp = firebase.initializeApp(firebaseConfig);
@@ -297,20 +323,31 @@
                 firebase.onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         console.log('User signed in:', user.uid);
-                        userId = user.uid;
                     } else {
                         console.log('No user signed in, signing in anonymously...');
-                        await firebase.signInAnonymously(auth);
-                        userId = auth.currentUser?.uid || 'default-user';
+                        // Use signInWithCustomToken if available, otherwise signInAnonymously
+                        if (typeof __initial_auth_token !== 'undefined') {
+                            await firebase.signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await firebase.signInAnonymously(auth);
+                        }
                     }
                     isAuthReady = true;
-                    console.log('Auth is ready. User ID:', userId);
-                    addDay();
+                    console.log('Auth is ready.');
+                    
+                    // ***** FIX: Only add the first day here automatically *****
+                    if (dayCount === 0) {
+                        addDay(); 
+                    }
+                    // ********************************************************
                 });
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
                 isAuthReady = true;
-                addDay();
+                // Fallback for non-firebase environment, still start Day 1
+                if (dayCount === 0) {
+                    addDay();
+                }
             }
         }
         
@@ -400,11 +437,14 @@
             let defaultStartLat = '';
             let defaultStartLng = '';
 
+            // Logic to calculate default date and start point for subsequent days (Day 2 onwards)
             if (dayCount === 1) {
+                // Initial setup for Day 1
                 defaultStartName = lastDayEndPoint.name;
                 defaultStartLat = lastDayEndPoint.coords.lat;
                 defaultStartLng = lastDayEndPoint.coords.lng;
             } else {
+                // Logic for Day 2+
                 const lastDayBlock = document.getElementById(`day-${dayCount - 1}`);
                 const lastDateInput = lastDayBlock.querySelector('.date-input');
                 if (lastDateInput && lastDateInput.value) {
@@ -424,6 +464,11 @@
                     defaultStartName = lastPlaceInput.value;
                     defaultStartLat = lastPlaceInput.dataset.lat;
                     defaultStartLng = lastPlaceInput.dataset.lng;
+                } else {
+                    // If no valid place on previous day, default back to airport
+                     defaultStartName = lastDayEndPoint.name;
+                     defaultStartLat = lastDayEndPoint.coords.lat;
+                     defaultStartLng = lastDayEndPoint.coords.lng;
                 }
             }
 
@@ -506,14 +551,21 @@
                 dayContainer.removeChild(lastDayBlock);
                 dayCount--;
                 const lastDayBlockPlaces = document.getElementById(`day-${dayCount}`);
+                
+                // Update lastDayEndPoint to the last place of the *new* last day (dayCount)
                 if (lastDayBlockPlaces) {
-                    const lastPlaceInput = lastDayBlockPlaces.querySelector('.place-input:last-of-type input[placeholder="장소명 입력"]');
+                    const placeInputs = lastDayBlockPlaces.querySelectorAll('.place-input');
+                    const lastPlaceInput = placeInputs.length > 0 
+                        ? placeInputs[placeInputs.length - 1].querySelector('input[placeholder="장소명 입력"]')
+                        : null;
+                    
                     if (lastPlaceInput && lastPlaceInput.dataset.lat) {
                         lastDayEndPoint = {
                             name: lastPlaceInput.value,
                             coords: { lat: lastPlaceInput.dataset.lat, lng: lastPlaceInput.dataset.lng }
                         };
                     } else {
+                        // Fallback to airport if the last day has no geo-coded places
                         lastDayEndPoint = {
                              name: '제주공항 주차장출입구',
                              coords: { lat: '33.507421', lng: '126.494208' }
@@ -522,7 +574,7 @@
                 }
                 
             } else {
-                showNotification('마지막 일정은 삭제할 수 없습니다.');
+                showNotification('마지막 일정은 삭제할 수 없습니다. 일정을 초기화하려면 새로고침하세요.');
             }
         }
         
@@ -619,6 +671,7 @@
                 if (query.length < 2) {
                     listElement.innerHTML = '';
                     listElement.classList.remove('visible');
+                    // Reset coordinates if text is cleared
                     delete inputElement.dataset.lat;
                     delete inputElement.dataset.lng;
                     return;
@@ -710,6 +763,7 @@
                     return;
                 }
                 
+                // Validate if a coordinate was selected for the start point
                 if (!startPointInput.dataset.lat || !startPointInput.dataset.lng) {
                     hideLoading();
                     showNotification(`"${startPointInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
@@ -736,6 +790,7 @@
                         const placeName = placeNameInput.value.trim().toLowerCase();
                         const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName);
                         
+                        // Check if a non-address place has coordinates (shouldn't) or if a place requiring coordinates is missing them.
                         if (!isNonAddress && (!placeNameInput.dataset.lat || !placeNameInput.dataset.lng)) {
                             hideLoading();
                              showNotification(`"${placeNameInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
@@ -784,15 +839,13 @@
             let currentPoint = startPoint;
             let currentTime;
             let waypoints = [];
-            if (date) {
-                const [hours, minutes] = startTime.split(':').map(Number);
-                currentTime = new Date(date);
-                currentTime.setHours(hours, minutes, 0, 0);
-            } else {
-                const [hours, minutes] = startTime.split(':').map(Number);
-                currentTime = new Date();
-                currentTime.setHours(hours, minutes, 0, 0);
-            }
+            
+            // Set initial time
+            let initialDate = date || new Date(); // Use provided date or current date if none
+            const [hours, minutes] = startTime.split(':').map(Number);
+            currentTime = new Date(initialDate);
+            currentTime.setHours(hours, minutes, 0, 0);
+
 
             let totalTravelDuration = 0;
 
@@ -844,35 +897,65 @@
             const firstPlaceWithCoords = places.find(p => p.coords);
             let fullRouteLink = null;
             if (startPoint.coords && firstPlaceWithCoords) {
+                const validWaypoints = waypoints.filter(wp => wp.coords);
+                
                 let originParam = `${startPoint.name},${startPoint.coords.lat},${startPoint.coords.lng}`;
-                let destinationParam = `${waypoints[waypoints.length - 1].name},${waypoints[waypoints.length - 1].coords.lat},${waypoints[waypoints.length - 1].coords.lng}`;
-                let waypointsParam = waypoints.slice(0, -1).map(wp => `${wp.name},${wp.coords.lat},${wp.coords.lng}`).join('/');
-                fullRouteLink = `https://map.kakao.com/link/to/${originParam}/via/${waypointsParam}/${destinationParam}`;
+                let destinationParam = '';
+                let waypointsParam = '';
+
+                if (validWaypoints.length > 0) {
+                    destinationParam = `${validWaypoints[validWaypoints.length - 1].name},${validWaypoints[validWaypoints.length - 1].coords.lat},${validWaypoints[validWaypoints.length - 1].coords.lng}`;
+                    if (validWaypoints.length > 1) {
+                         waypointsParam = validWaypoints.slice(0, -1).map(wp => `${wp.name},${wp.coords.lat},${wp.coords.lng}`).join('/');
+                         fullRouteLink = `https://map.kakao.com/link/to/${originParam}/via/${waypointsParam}/${destinationParam}`;
+                    } else {
+                         fullRouteLink = `https://map.kakao.com/link/from/${originParam}/to/${destinationParam}`;
+                    }
+                } else {
+                    // Only one destination or only non-address destinations
+                    fullRouteLink = `https://map.kakao.com/link/from/${originParam}/to/${firstPlaceWithCoords.name},${firstPlaceWithCoords.coords.lat},${firstPlaceWithCoords.coords.lng}`;
+                }
             }
+
 
             renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink);
         }
 
         async function getDrivingDuration(start, end) {
             const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${start.coords.lng},${start.coords.lat}&destination=${end.coords.lng},${end.coords.lat}`;
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` }
-                });
-                const json = await response.json();
-                
-                if (json.routes && json.routes.length > 0) {
-                    const route = json.routes[0];
-                    const durationInSeconds = route.summary.duration;
-                    return {
-                        duration: Math.floor(durationInSeconds / 60)
-                    };
+            let retryCount = 0;
+            const maxRetries = 3;
+            let duration = 0;
+
+            while (retryCount < maxRetries) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` }
+                    });
+                    const json = await response.json();
+                    
+                    if (json.routes && json.routes.length > 0) {
+                        const route = json.routes[0];
+                        const durationInSeconds = route.summary.duration;
+                        duration = Math.floor(durationInSeconds / 60);
+                        break; // Success
+                    } else {
+                        // No route found, duration remains 0
+                        break;
+                    }
+                } catch (error) {
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        // Exponential backoff: 1s, 2s, 4s...
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000));
+                    } else {
+                        console.error('카카오 내비 API 호출 실패 (최대 재시도 횟수 초과):', error);
+                    }
                 }
-            } catch (error) {
-                console.error('카카오 내비 API 호출 실패:', error);
             }
-            return { duration: 0 };
+
+            return { duration: duration };
         }
         
         function renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink) {
@@ -1060,7 +1143,7 @@
         });
 
         confirmSaveBtn.addEventListener('click', async () => {
-            if (!isAuthReady || !userId) {
+            if (!isAuthReady) {
                 showNotification('인증이 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
                 return;
             }
@@ -1074,7 +1157,6 @@
             const data = {
                 dayCount: dayCount,
                 schedules: [],
-                userId: userId,
                 fileName: filename
             };
 
@@ -1110,8 +1192,8 @@
             }
 
             try {
-                // Change path to user's private collection
-                const docRef = firebase.doc(db, `artifacts/${__app_id}/users/${userId}/private-plans`, fileId);
+                // Now saving to a public collection
+                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
                 await firebase.setDoc(docRef, data);
                 hideSaveLoadModal();
                 showNotification(`'${filename}' 파일이 성공적으로 저장되었습니다.`);
@@ -1138,14 +1220,14 @@
         });
 
         async function renderFileList() {
-            if (!isAuthReady || !userId) {
+            if (!isAuthReady) {
                 fileList.innerHTML = '<li class="p-2 text-red-500">인증 문제로 파일을 불러올 수 없습니다.</li>';
                 return;
             }
             fileList.innerHTML = '';
             try {
-                // Change path to user's private collection
-                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/users/${userId}/private-plans`));
+                // Now querying from the public collection
+                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`));
                 const querySnapshot = await firebase.getDocs(q);
                 
                 if (querySnapshot.empty) {
@@ -1180,8 +1262,7 @@
                 const fileId = deleteBtn.dataset.fileId;
                 showConfirmation(`파일을 정말 삭제하시겠습니까?`, async () => {
                     try {
-                        // Change path to user's private collection
-                        const docRef = firebase.doc(db, `artifacts/${__app_id}/users/${userId}/private-plans`, fileId);
+                        const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
                         await firebase.deleteDoc(docRef);
                         showNotification('파일이 성공적으로 삭제되었습니다.');
                         renderFileList();
@@ -1198,8 +1279,7 @@
         
         async function loadFileFromFileId(fileId) {
             try {
-                // Change path to user's private collection
-                const docRef = firebase.doc(db, `artifacts/${__app_id}/users/${userId}/private-plans`, fileId);
+                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
                 const docSnap = await firebase.getDoc(docRef);
 
                 if (!docSnap.exists()) {
@@ -1257,6 +1337,14 @@
             } catch (error) {
                 console.error("Error loading document:", error);
                 showNotification("파일을 불러오는 데 실패했습니다. 다시 시도해주세요.");
+            }
+        }
+
+        // Event listeners for password modal
+        passwordSubmitBtn.addEventListener('click', checkPasswordAndInitialize);
+        function handlePasswordKey(event) {
+            if (event.key === 'Enter') {
+                checkPasswordAndInitialize();
             }
         }
     </script>
