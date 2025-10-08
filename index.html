@@ -7,31 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Expose Firebase services to the global scope for the main script
-        window.firebase = {
-            initializeApp,
-            getAuth,
-            signInAnonymously,
-            signInWithCustomToken,
-            onAuthStateChanged,
-            getFirestore,
-            doc,
-            getDoc,
-            setDoc,
-            deleteDoc,
-            onSnapshot,
-            collection,
-            query,
-            where,
-            getDocs
-        };
-    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
         body {
@@ -165,7 +140,6 @@
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <!-- Password modal -->
     <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
         <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">비밀번호를 입력하세요</h3>
@@ -185,16 +159,15 @@
             <div id="app" class="space-y-8">
                 <div class="flex justify-center gap-4 mb-8">
                     <button id="save-btn" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-800 transition-colors">
-                        <i class="fas fa-save mr-2"></i>저장하기
+                        <i class="fas fa-file-export mr-2"></i>PC에 저장 (.json)
                     </button>
                     <button id="load-btn" class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-500 transition-colors">
-                        <i class="fas fa-folder-open mr-2"></i>불러오기
+                        <i class="fas fa-file-import mr-2"></i>PC 파일 불러오기
                     </button>
                 </div>
                 
                 <div id="day-container" class="space-y-8">
-                    <!-- Day blocks will be added here -->
-                </div>
+                    </div>
 
                 <div class="flex justify-center gap-4 mt-8">
                     <button id="add-day-btn" class="bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition-colors">
@@ -211,41 +184,19 @@
                 <div id="results" class="mt-8 hidden">
                     <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">여행 동선 결과</h2>
                     <div id="results-container" class="space-y-6">
-                        <!-- Results will be displayed here -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- Notification modal -->
             <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
                 <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
                     <p id="notification-message" class="text-gray-800 text-lg"></p>
                     <div id="modal-button-container" class="mt-6 flex justify-center gap-2"></div>
                 </div>
             </div>
-
-            <!-- Save/Load modal -->
-            <div id="save-load-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-                <div class="bg-white rounded-xl p-8 max-w-lg w-full text-center shadow-2xl">
-                    <h3 id="save-load-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
-                    <div id="save-content" class="space-y-4 hidden">
-                        <input type="text" id="filename-input" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="공유할 파일명을 입력해 주세요.">
-                        <div class="flex justify-center gap-2">
-                            <button id="confirm-save-btn" class="bg-green-500 text-white py-2 px-4 rounded-full hover:bg-green-600">저장</button>
-                            <button id="cancel-save-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
-                        </div>
-                    </div>
-                    <div id="load-content" class="space-y-4 hidden">
-                        <div class="space-y-2">
-                            <h4 class="font-semibold text-left text-gray-700">파일 불러오기</h4>
-                            <ul id="file-list" class="text-left max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2"></ul>
-                        </div>
-                        <button id="cancel-load-btn" class="bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500">취소</button>
-                    </div>
-                </div>
-            </div>
             
-            <!-- Loading overlay -->
+            <input type="file" id="file-load-input" accept=".json" class="hidden">
+
             <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden">
                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
                 <p class="text-white text-lg">동선 계산 중...</p>
@@ -257,10 +208,8 @@
         const KAKAO_API_KEY = '569bb7ab8cbe696339ba922fa5dc101a';
         const CORRECT_PASSWORD = '2222'; // 비밀번호 설정
         
-        let db;
-        let auth;
-        let isAuthReady = false; // 인증 준비 상태 플래그
-
+        // Firebase 관련 변수 및 함수는 모두 제거합니다.
+        
         const passwordModal = document.getElementById('password-modal');
         const passwordInput = document.getElementById('password-input');
         const passwordSubmitBtn = document.getElementById('password-submit-btn');
@@ -278,21 +227,10 @@
         const notificationModal = document.getElementById('notification-modal');
         const notificationMessage = document.getElementById('notification-message');
         const modalButtonContainer = document.getElementById('modal-button-container');
-        const saveLoadModal = document.getElementById('save-load-modal');
-        const saveLoadTitle = document.getElementById('save-load-title');
-        const saveContent = document.getElementById('save-content');
-        const loadContent = document.getElementById('load-content');
-        const filenameInput = document.getElementById('filename-input');
-        const confirmSaveBtn = document.getElementById('confirm-save-btn');
-        const cancelSaveBtn = document.getElementById('cancel-save-btn');
-        const fileList = document.getElementById('file-list');
-        const cancelLoadBtn = document.getElementById('cancel-load-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
         
-        let __app_id = 'default-app-id';
-        if (typeof window.__app_id !== 'undefined') {
-            __app_id = window.__app_id;
-        }
+        // PC 파일 불러오기를 위한 숨겨진 Input
+        const fileLoadInput = document.getElementById('file-load-input');
 
         let dayCount = 0;
         let lastDayEndPoint = {
@@ -306,67 +244,12 @@
             if (passwordInput.value === CORRECT_PASSWORD) {
                 passwordModal.classList.add('hidden');
                 mainContent.classList.remove('hidden');
-                await initializeFirebase();
-            } else {
-                passwordError.classList.remove('hidden');
-            }
-        }
-
-        async function initializeFirebase() {
-            let configToUse = {};
-            try {
-                // Canvas에서 제공하는 Firebase 설정값 로드 및 파싱
-                const configString = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-                const firebaseConfig = JSON.parse(configString);
-
-                // projectId가 없는 경우 Firebase 초기화 건너뛰기
-                if (!firebaseConfig.projectId) {
-                    console.warn("Firebase 경고: 'projectId'를 찾을 수 없어 저장 기능을 사용할 수 없습니다.");
-                    isAuthReady = false; // Firebase 사용 불가 명시
-                    if (dayCount === 0) {
-                        addDay(); 
-                    }
-                    return;
-                }
-                
-                // Firebase 초기화 및 인증 진행
-                const firebaseApp = firebase.initializeApp(firebaseConfig);
-                db = firebase.getFirestore(firebaseApp);
-                auth = firebase.getAuth(firebaseApp);
-                
-                // Initial sign-in logic (wait for this to complete)
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await firebase.signInWithCustomToken(auth, __initial_auth_token);
-                    console.log('Firebase: Signed in with custom token.');
-                } else {
-                    await firebase.signInAnonymously(auth);
-                    console.log('Firebase: Signed in anonymously.');
-                }
-                
-                // Now, auth is ready and db/auth are set.
-                isAuthReady = true;
-                console.log('Firebase: Auth is ready and services are set.');
-                
-                // Add the onAuthStateChanged listener only for runtime changes
-                firebase.onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        console.log('User state changed:', user.uid);
-                    } else {
-                        console.log('User signed out.');
-                    }
-                });
-
+                // Firebase 초기화 로직 제거
                 if (dayCount === 0) {
                     addDay(); 
                 }
-
-            } catch (error) {
-                console.error("Firebase 초기화 중 심각한 오류 발생:", error);
-                // 오류가 발생하면 저장 기능은 사용할 수 없게 처리
-                isAuthReady = false; 
-                if (dayCount === 0) {
-                    addDay();
-                }
+            } else {
+                passwordError.classList.remove('hidden');
             }
         }
         
@@ -418,25 +301,7 @@
             notificationModal.classList.remove('hidden');
         }
 
-        function showSaveLoadModal(mode) {
-            saveLoadModal.classList.remove('hidden');
-            if (mode === 'save') {
-                saveLoadTitle.textContent = '파일 저장';
-                saveContent.classList.remove('hidden');
-                loadContent.classList.add('hidden');
-                filenameInput.value = '';
-            } else if (mode === 'load') {
-                saveLoadTitle.textContent = '파일 불러오기';
-                saveContent.classList.add('hidden');
-                loadContent.classList.remove('hidden');
-                renderFileList();
-            }
-        }
-
-        function hideSaveLoadModal() {
-            saveLoadModal.classList.add('hidden');
-        }
-
+        // addDay, removeDay, updatePlaceLabels, attachDeleteEvents, attachDragAndDrop, attachAutocomplete, searchKakaoPlaces 함수는 동일하게 유지
         function addDay() {
             dayCount++;
             const dayBlock = document.createElement('div');
@@ -456,14 +321,11 @@
             let defaultStartLat = '';
             let defaultStartLng = '';
 
-            // Logic to calculate default date and start point for subsequent days (Day 2 onwards)
             if (dayCount === 1) {
-                // Initial setup for Day 1
                 defaultStartName = lastDayEndPoint.name;
                 defaultStartLat = lastDayEndPoint.coords.lat;
                 defaultStartLng = lastDayEndPoint.coords.lng;
             } else {
-                // Logic for Day 2+
                 const lastDayBlock = document.getElementById(`day-${dayCount - 1}`);
                 const lastDateInput = lastDayBlock.querySelector('.date-input');
                 if (lastDateInput && lastDateInput.value) {
@@ -484,7 +346,6 @@
                     defaultStartLat = lastPlaceInput.dataset.lat;
                     defaultStartLng = lastPlaceInput.dataset.lng;
                 } else {
-                    // If no valid place on previous day, default back to airport
                      defaultStartName = lastDayEndPoint.name;
                      defaultStartLat = lastDayEndPoint.coords.lat;
                      defaultStartLng = lastDayEndPoint.coords.lng;
@@ -505,7 +366,6 @@
                         <input type="text" id="start-point-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="예: 제주국제공항" value="${defaultStartName}" data-lat="${defaultStartLat}" data-lng="${defaultStartLng}">
                         <ul class="autocomplete-list"></ul>
                     </div>
-                    <!-- Start time added back -->
                     <div class="flex items-center gap-4 input-container">
                         <label for="start-time-${dayCount}" class="text-gray-700 w-28">출발 시간:</label>
                         <select id="start-time-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400">
@@ -571,7 +431,6 @@
                 dayCount--;
                 const lastDayBlockPlaces = document.getElementById(`day-${dayCount}`);
                 
-                // Update lastDayEndPoint to the last place of the *new* last day (dayCount)
                 if (lastDayBlockPlaces) {
                     const placeInputs = lastDayBlockPlaces.querySelectorAll('.place-input');
                     const lastPlaceInput = placeInputs.length > 0 
@@ -584,7 +443,6 @@
                             coords: { lat: lastPlaceInput.dataset.lat, lng: lastPlaceInput.dataset.lng }
                         };
                     } else {
-                        // Fallback to airport if the last day has no geo-coded places
                         lastDayEndPoint = {
                              name: '제주공항 주차장출입구',
                              coords: { lat: '33.507421', lng: '126.494208' }
@@ -690,7 +548,6 @@
                 if (query.length < 2) {
                     listElement.innerHTML = '';
                     listElement.classList.remove('visible');
-                    // Reset coordinates if text is cleared
                     delete inputElement.dataset.lat;
                     delete inputElement.dataset.lng;
                     return;
@@ -766,6 +623,7 @@
         addDayBtn.addEventListener('click', addDay);
         removeDayBtn.addEventListener('click', removeDay);
 
+        // calculateBtn 로직 및 processSchedule, getDrivingDuration, renderResults는 이전과 동일
         calculateBtn.addEventListener('click', async () => {
             showLoading();
             const allSchedules = [];
@@ -782,7 +640,6 @@
                     return;
                 }
                 
-                // Validate if a coordinate was selected for the start point
                 if (!startPointInput.dataset.lat || !startPointInput.dataset.lng) {
                     hideLoading();
                     showNotification(`"${startPointInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
@@ -809,7 +666,6 @@
                         const placeName = placeNameInput.value.trim().toLowerCase();
                         const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName);
                         
-                        // Check if a non-address place has coordinates (shouldn't) or if a place requiring coordinates is missing them.
                         if (!isNonAddress && (!placeNameInput.dataset.lat || !placeNameInput.dataset.lng)) {
                             hideLoading();
                              showNotification(`"${placeNameInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
@@ -859,8 +715,7 @@
             let currentTime;
             let waypoints = [];
             
-            // Set initial time
-            let initialDate = date || new Date(); // Use provided date or current date if none
+            let initialDate = date || new Date(); 
             const [hours, minutes] = startTime.split(':').map(Number);
             currentTime = new Date(initialDate);
             currentTime.setHours(hours, minutes, 0, 0);
@@ -879,7 +734,6 @@
                 if (destination.coords && currentPoint.coords) {
                     const travelResult = await getDrivingDuration(currentPoint, destination);
                     travelDuration = travelResult.duration;
-                    // Corrected: Use the proper link format for single routes
                     routeLink = `https://map.kakao.com/link/from/${segmentFrom.name},${segmentFrom.coords.lat},${segmentFrom.coords.lng}/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
                 }
                 
@@ -912,7 +766,6 @@
                 currentTime = departureTime;
             }
             
-            // Generate full day route link
             const firstPlaceWithCoords = places.find(p => p.coords);
             let fullRouteLink = null;
             if (startPoint.coords && firstPlaceWithCoords) {
@@ -931,7 +784,6 @@
                          fullRouteLink = `https://map.kakao.com/link/from/${originParam}/to/${destinationParam}`;
                     }
                 } else {
-                    // Only one destination or only non-address destinations
                     fullRouteLink = `https://map.kakao.com/link/from/${originParam}/to/${firstPlaceWithCoords.name},${firstPlaceWithCoords.coords.lat},${firstPlaceWithCoords.coords.lng}`;
                 }
             }
@@ -958,15 +810,13 @@
                         const route = json.routes[0];
                         const durationInSeconds = route.summary.duration;
                         duration = Math.floor(durationInSeconds / 60);
-                        break; // Success
+                        break;
                     } else {
-                        // No route found, duration remains 0
                         break;
                     }
                 } catch (error) {
                     retryCount++;
                     if (retryCount < maxRetries) {
-                        // Exponential backoff: 1s, 2s, 4s...
                         await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000));
                     } else {
                         console.error('카카오 내비 API 호출 실패 (최대 재시도 횟수 초과):', error);
@@ -1121,7 +971,7 @@
             }
         };
 
-        // Capture function
+        // Capture function (기존 유지)
         window.captureElement = function(elementId, filename) {
             const element = document.getElementById(elementId);
             if (!element) {
@@ -1129,7 +979,6 @@
                 return;
             }
 
-            // Temporarily hide the capture button
             const captureBtn = element.querySelector('.capture-btn');
             if (captureBtn) {
                 captureBtn.style.display = 'none';
@@ -1143,7 +992,6 @@
                 link.click();
                 document.body.removeChild(link);
                 
-                // Show the button again
                 if (captureBtn) {
                     captureBtn.style.display = '';
                 }
@@ -1152,36 +1000,14 @@
             });
         };
 
-        // Save and Load functionality
-        saveBtn.addEventListener('click', () => {
-             // Firebase가 초기화되지 않았거나 준비 안 되었으면 저장 불가 알림
-             if (!isAuthReady) {
-                showNotification('저장소 설정 문제로 저장 기능을 사용할 수 없습니다. 잠시 후 다시 시도하거나 새로고침하세요.');
-                return;
-            }
-            showSaveLoadModal('save');
-        });
+        // --- PC File Save/Load functionality (New) ---
 
-        confirmSaveBtn.addEventListener('click', async () => {
-             if (!isAuthReady) {
-                showNotification('저장소 설정 문제로 저장 기능을 사용할 수 없습니다.');
-                return;
-            }
-
-            const filename = filenameInput.value.trim();
-            if (!filename) {
-                showNotification('파일명을 입력해주세요.');
-                return;
-            }
-            const fileId = `file-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
-            const data = {
-                dayCount: dayCount,
-                schedules: [],
-                fileName: filename
-            };
-
+        function exportScheduleData() {
+            const schedules = [];
             for (let i = 1; i <= dayCount; i++) {
                 const dayBlock = document.getElementById(`day-${i}`);
+                if (!dayBlock) continue;
+                
                 const dateInput = dayBlock.querySelector('.date-input');
                 const startTimeInput = dayBlock.querySelector(`#start-time-${i}`);
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
@@ -1192,6 +1018,7 @@
                     const placeNameInput = placeInputDiv.querySelector('input[placeholder="장소명 입력"]');
                     const stayDurationInput = placeInputDiv.querySelector('input[placeholder="체류 시간(분)"]');
                     const remarkInput = placeInputDiv.querySelector('input[placeholder^="비고"]');
+                    
                     placesData.push({
                         name: placeNameInput.value,
                         coords: { lat: placeNameInput.dataset.lat || '', lng: placeNameInput.dataset.lng || '' },
@@ -1200,7 +1027,8 @@
                     });
                 });
 
-                data.schedules.push({
+                schedules.push({
+                    dayIndex: i,
                     date: dateInput.value,
                     startTime: startTimeInput.value,
                     startPoint: {
@@ -1211,156 +1039,122 @@
                 });
             }
 
-            try {
-                // Now saving to a public collection
-                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
-                await firebase.setDoc(docRef, data);
-                hideSaveLoadModal();
-                showNotification(`'${filename}' 파일이 성공적으로 저장되었습니다.`);
-            } catch (error) {
-                console.error("Error saving document: ", error);
-                showNotification("파일 저장에 실패했습니다. 다시 시도해주세요.");
+            return {
+                dayCount: dayCount,
+                schedules: schedules,
+                version: '1.0' // 버전 정보 추가 (추후 호환성 확인용)
+            };
+        }
+
+        saveBtn.addEventListener('click', () => {
+            const data = exportScheduleData();
+            if (data.schedules.length === 0) {
+                 showNotification('저장할 일정이 없습니다. 일정을 추가해주세요.');
+                 return;
             }
+
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // 파일명을 현재 날짜와 시간으로 자동 생성
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+            link.download = `여행동선계획_${dateStr}_${timeStr}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showNotification('일정 파일이 PC에 성공적으로 저장되었습니다.');
         });
-        
-        cancelSaveBtn.addEventListener('click', () => {
-            hideSaveLoadModal();
-        });
+
 
         loadBtn.addEventListener('click', () => {
-            // Firebase가 초기화되지 않았거나 준비 안 되었으면 불러오기 불가 알림
-            if (!isAuthReady) {
-                showNotification('저장소 설정 문제로 불러오기 기능을 사용할 수 없습니다. 잠시 후 다시 시도하거나 새로고침하세요.');
-                return;
-            }
-            showSaveLoadModal('load');
+            fileLoadInput.click(); // 숨겨진 파일 입력 필드 클릭
+        });
+        
+        fileLoadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    loadScheduleData(data);
+                    showNotification(`'${file.name}' 파일이 성공적으로 불러와졌습니다.`);
+                } catch (error) {
+                    console.error("Error loading file:", error);
+                    showNotification("파일을 불러오는 데 실패했습니다. 파일 형식이 올바른지 확인해주세요.");
+                }
+            };
+            reader.readAsText(file);
+            // 같은 파일을 다시 로드할 수 있도록 입력값을 초기화합니다.
+            e.target.value = null; 
         });
 
-        cancelLoadBtn.addEventListener('click', () => {
-            hideSaveLoadModal();
-        });
+        function loadScheduleData(data) {
+            // Clear current days
+            dayContainer.innerHTML = '';
+            dayCount = 0;
 
-        async function renderFileList() {
-            if (!isAuthReady) {
-                fileList.innerHTML = '<li class="p-2 text-red-500">저장소 설정 문제로 파일 목록을 불러올 수 없습니다.</li>';
-                return;
+            if (!data.schedules || data.schedules.length === 0) {
+                 showNotification('불러올 수 있는 유효한 일정 데이터가 파일에 없습니다.');
+                 return;
             }
-            fileList.innerHTML = '';
-            try {
-                // Now querying from the public collection
-                const q = firebase.query(firebase.collection(db, `artifacts/${__app_id}/public/data/shared-plans`));
-                const querySnapshot = await firebase.getDocs(q);
+
+            data.schedules.forEach(schedule => {
+                addDay();
+                const dayBlock = document.getElementById(`day-${dayCount}`);
                 
-                if (querySnapshot.empty) {
-                    fileList.innerHTML = '<li class="p-2 text-gray-500">저장된 파일이 없습니다.</li>';
-                    return;
-                }
+                // Set Date and Start Time
+                dayBlock.querySelector('.date-input').value = schedule.date;
+                // 'addDay'에서 기본적으로 Time Select 박스의 값이 설정되어 있으므로, 직접 값 설정
+                dayBlock.querySelector(`#start-time-${dayCount}`).value = schedule.startTime; 
+                
+                // Set Start Point
+                const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                startPointInput.value = schedule.startPoint.name;
+                startPointInput.dataset.lat = schedule.startPoint.coords.lat;
+                startPointInput.dataset.lng = schedule.startPoint.coords.lng;
+                
+                const placesContainer = dayBlock.querySelector('.drag-container');
+                placesContainer.innerHTML = ''; // 기존에 addDay가 생성한 초기 장소 제거
 
-                querySnapshot.forEach(doc => {
-                    const filename = doc.data().fileName || '제목 없음';
-                    const fileId = doc.id;
-                    const li = document.createElement('li');
-                    li.className = 'py-2 px-4 cursor-pointer hover:bg-gray-100 rounded-lg flex justify-between items-center file-list-item';
-                    li.innerHTML = `
-                        <span class="load-file-btn" data-file-id="${fileId}">${filename}</span>
-                        <button class="text-red-500 hover:text-red-700 delete-file-btn" data-file-id="${fileId}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                // Load Places
+                schedule.places.forEach((place, index) => {
+                    const placeInput = document.createElement('div');
+                    placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
+                    placeInput.setAttribute('draggable', 'true');
+                    placeInput.innerHTML = `
+                        <label class="text-gray-700 place-label no-select">장소 ${index + 1}:</label>
+                        <div class="flex-1 input-container place-name-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력" value="${place.name}" data-lat="${place.coords.lat}" data-lng="${place.coords.lng}">
+                            <ul class="autocomplete-list"></ul>
+                        </div>
+                        <div class="w-24 stay-duration-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)" value="${place.stayDuration}">
+                        </div>
+                        <div class="flex-1 remark-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)" value="${place.remark}">
+                        </div>
+                        <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
                     `;
-                    fileList.appendChild(li);
+                    placesContainer.appendChild(placeInput);
+                    attachAutocomplete(placeInput.querySelector('input[type="text"]'));
                 });
-            } catch (error) {
-                console.error("Error rendering file list:", error);
-                fileList.innerHTML = '<li class="p-2 text-red-500">파일 목록을 불러오는 데 실패했습니다.</li>';
-            }
+                updatePlaceLabels(dayBlock);
+                attachDeleteEvents(dayBlock);
+                attachDragAndDrop(dayBlock);
+            });
         }
         
-        fileList.addEventListener('click', (e) => {
-            const deleteBtn = e.target.closest('.delete-file-btn');
-            const loadBtn = e.target.closest('.load-file-btn');
-
-            if (deleteBtn) {
-                const fileId = deleteBtn.dataset.fileId;
-                showConfirmation(`파일을 정말 삭제하시겠습니까?`, async () => {
-                    try {
-                        const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
-                        await firebase.deleteDoc(docRef);
-                        showNotification('파일이 성공적으로 삭제되었습니다.');
-                        renderFileList();
-                    } catch (error) {
-                        console.error("Error deleting document: ", error);
-                        showNotification("파일 삭제에 실패했습니다. 다시 시도해주세요.");
-                    }
-                });
-            } else if (loadBtn) {
-                const fileId = loadBtn.dataset.fileId;
-                loadFileFromFileId(fileId);
-            }
-        });
-        
-        async function loadFileFromFileId(fileId) {
-            try {
-                const docRef = firebase.doc(db, `artifacts/${__app_id}/public/data/shared-plans`, fileId);
-                const docSnap = await firebase.getDoc(docRef);
-
-                if (!docSnap.exists()) {
-                    showNotification('파일을 찾을 수 없습니다.');
-                    return;
-                }
-                const data = docSnap.data();
-
-                // Clear current days
-                dayContainer.innerHTML = '';
-                dayCount = 0;
-
-                data.schedules.forEach(schedule => {
-                    addDay();
-                    const dayBlock = document.getElementById(`day-${dayCount}`);
-                    dayBlock.querySelector('.date-input').value = schedule.date;
-                    dayBlock.querySelector(`#start-time-${dayCount}`).value = schedule.startTime;
-                    
-                    const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
-                    startPointInput.value = schedule.startPoint.name;
-                    startPointInput.dataset.lat = schedule.startPoint.coords.lat;
-                    startPointInput.dataset.lng = schedule.startPoint.coords.lng;
-                    
-                    const placesContainer = dayBlock.querySelector('.drag-container');
-                    placesContainer.innerHTML = '';
-
-                    schedule.places.forEach((place, index) => {
-                        const placeInput = document.createElement('div');
-                        placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
-                        placeInput.setAttribute('draggable', 'true');
-                        placeInput.innerHTML = `
-                            <label class="text-gray-700 place-label no-select">장소 ${index + 1}:</label>
-                            <div class="flex-1 input-container place-name-input">
-                                <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력" value="${place.name}" data-lat="${place.coords.lat}" data-lng="${place.coords.lng}">
-                                <ul class="autocomplete-list"></ul>
-                            </div>
-                            <div class="w-24 stay-duration-input">
-                                <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)" value="${place.stayDuration}">
-                            </div>
-                            <div class="flex-1 remark-input">
-                                <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)" value="${place.remark}">
-                            </div>
-                            <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
-                        `;
-                        placesContainer.appendChild(placeInput);
-                        attachAutocomplete(placeInput.querySelector('input[type="text"]'));
-                    });
-                    updatePlaceLabels(dayBlock);
-                    attachDeleteEvents(dayBlock);
-                    attachDragAndDrop(dayBlock);
-                });
-                hideSaveLoadModal();
-                showNotification(`'${data.fileName}' 파일이 성공적으로 불러와졌습니다.`);
-
-            } catch (error) {
-                console.error("Error loading document:", error);
-                showNotification("파일을 불러오는 데 실패했습니다. 다시 시도해주세요.");
-            }
-        }
-
         // Event listeners for password modal
         passwordSubmitBtn.addEventListener('click', checkPasswordAndInitialize);
         function handlePasswordKey(event) {
