@@ -312,17 +312,17 @@
         const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
         // --- Password Check and Main Content Initialization ---
-        function checkPasswordAndInitialize() {
+        async function checkPasswordAndInitialize() {
             if (passwordInput.value === CORRECT_PASSWORD) {
                 passwordModal.classList.add('hidden');
                 mainContent.classList.remove('hidden');
-                initializeFirebase();
+                await initializeFirebase(); // Changed to await
             } else {
                 passwordError.classList.remove('hidden');
             }
         }
 
-        async function initializeFirebase() {
+        async function initializeFirebase() { // Changed to async
             let configToUse = {};
             try {
                 // 1. 자동 설정값 로드 및 파싱 시도
@@ -338,7 +338,7 @@
                     console.warn("Firebase 경고: 자동 설정에 'projectId'가 없어 수동 설정값을 사용합니다.");
                 }
                 
-                // 3. 중요 수정: 설정에 projectId가 없으면 Firebase 초기화를 건너뜁니다.
+                // 3. 중요 수정: 설정에 projectId가 없으면 Firebase 초기화를 건너뜕
                 if (!configToUse.projectId) {
                     console.warn("Firebase 경고: 'projectId'를 찾을 수 없어 저장 기능을 사용할 수 없습니다. 이 환경의 설정 문제일 수 있습니다.");
                     isAuthReady = true; 
@@ -353,26 +353,32 @@
                 db = firebase.getFirestore(firebaseApp);
                 auth = firebase.getAuth(firebaseApp);
                 
-                // Use onAuthStateChanged to ensure authentication is ready
-                firebase.onAuthStateChanged(auth, async (user) => {
+                // Initial sign-in logic (wait for this to complete)
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await firebase.signInWithCustomToken(auth, __initial_auth_token);
+                    console.log('Firebase: Signed in with custom token.');
+                } else {
+                    await firebase.signInAnonymously(auth);
+                    console.log('Firebase: Signed in anonymously.');
+                }
+                
+                // Now, auth is ready and db/auth are set.
+                isAuthReady = true;
+                console.log('Auth is ready and services are set.');
+                
+                // Add the onAuthStateChanged listener only for runtime changes
+                firebase.onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        console.log('User signed in:', user.uid);
+                        console.log('User state changed:', user.uid);
                     } else {
-                        console.log('No user signed in, signing in anonymously...');
-                        // Use signInWithCustomToken if available, otherwise signInAnonymously
-                        if (typeof __initial_auth_token !== 'undefined') {
-                            await firebase.signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await firebase.signInAnonymously(auth);
-                        }
-                    }
-                    isAuthReady = true;
-                    console.log('Auth is ready.');
-                    
-                    if (dayCount === 0) {
-                        addDay(); 
+                        console.log('User signed out.');
                     }
                 });
+
+                if (dayCount === 0) {
+                    addDay(); 
+                }
+
             } catch (error) {
                 console.error("Firebase 초기화 중 심각한 오류 발생:", error);
                 // 오류가 나더라도 UI는 띄울 수 있도록 처리
