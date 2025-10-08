@@ -1078,16 +1078,13 @@
         function getInitialFilename() {
             // 사용자 요청에 따라 기본 파일명 없이 빈 문자열을 반환합니다.
             return ''; 
-            /*
-            // 이전 로직: 현재 날짜 기반으로 파일명을 제안했습니다.
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-            return `여행동선계획_${dateStr}`;
-            */
         }
         
         // Save 버튼 클릭 시 파일명 입력 모달을 띄웁니다.
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', (event) => {
+            // 브라우저의 기본 동작 방지 (혹시 모를)
+            event.preventDefault(); 
+            
             const data = exportScheduleData();
             if (data.schedules.length === 0) {
                  showNotification('저장할 일정이 없습니다. 일정을 추가해주세요.');
@@ -1095,7 +1092,7 @@
             }
 
             // Show filename modal instead of immediate download
-            filenameInput.value = getInitialFilename(); // 초기 파일명 설정
+            filenameInput.value = getInitialFilename(); // 초기 파일명 설정: 빈 문자열
             filenameError.classList.add('hidden');
             filenameModal.classList.remove('hidden');
             filenameInput.focus();
@@ -1124,7 +1121,7 @@
                 return;
             }
             
-            // Hide modal
+            // Hide modal before starting download process
             filenameModal.classList.add('hidden');
             
             // Get data and prepare for download
@@ -1139,6 +1136,7 @@
             // Use the user-provided name + .json extension
             link.download = `${name}.json`;
             
+            // The actual download action
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
