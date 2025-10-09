@@ -136,12 +136,21 @@
                 width: 100%;
                 margin-top: 0.5rem;
             }
+            /* 모바일에서 출발 시간/비고 입력 필드가 세로로 쌓이도록 조정 */
+            .start-time-remark-row > * {
+                 width: 100%;
+            }
+            .start-time-remark-row label.w-28 {
+                 width: auto;
+            }
+            .start-time-remark-row select {
+                 width: 100%;
+            }
         }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <!-- Password modal -->
-    <!-- z-40 적용: 다른 모달과의 겹침 방지 -->
+    <!-- 비밀번호 입력 모달 -->
     <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
         <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">비밀번호를 입력하세요</h3>
@@ -151,8 +160,7 @@
         </div>
     </div>
 
-    <!-- Filename Input Modal (New) -->
-    <!-- z-50 적용: 가장 높은 우선순위로 항상 최상단에 표시 -->
+    <!-- 파일명 입력 모달 (저장 시 사용) -->
     <div id="filename-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">파일 저장 이름 입력</h3>
@@ -174,11 +182,11 @@
 
             <div id="app" class="space-y-8">
                 <div class="flex justify-center gap-4 mb-8">
-                    <!-- 버튼 텍스트 수정: 저장 (.json) -->
+                    <!-- 저장 버튼: 클릭 시 파일명 모달을 띄움 -->
                     <button id="save-btn" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-800 transition-colors">
                         <i class="fas fa-file-export mr-2"></i>저장 (.json)
                     </button>
-                    <!-- 버튼 텍스트 수정: 불러오기 (.json) -->
+                    <!-- 불러오기 버튼 -->
                     <button id="load-btn" class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-500 transition-colors">
                         <i class="fas fa-file-import mr-2"></i>불러오기 (.json)
                     </button>
@@ -208,8 +216,7 @@
                 </div>
             </div>
 
-            <!-- Notification modal -->
-            <!-- z-40 적용: 다른 모달과의 겹침 방지 -->
+            <!-- 알림 및 확인 모달 -->
             <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-40">
                 <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
                     <p id="notification-message" class="text-gray-800 text-lg"></p>
@@ -217,11 +224,10 @@
                 </div>
             </div>
             
-            <!-- File Load Input (숨김 처리) -->
+            <!-- 파일 불러오기를 위한 숨겨진 Input -->
             <input type="file" id="file-load-input" accept=".json" class="hidden">
 
-            <!-- Loading overlay -->
-            <!-- z-40 적용: 다른 모달과의 겹침 방지 -->
+            <!-- 로딩 오버레이 -->
             <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden z-40">
                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
                 <p class="text-white text-lg">동선 계산 중...</p>
@@ -282,7 +288,7 @@
             }
         }
         
-        // --- Helper functions (showLoading, hideLoading, showNotification, showConfirmation are unchanged) ---
+        // --- Helper functions ---
         function showLoading() {
             loadingOverlay.classList.remove('hidden');
         }
@@ -330,7 +336,6 @@
             notificationModal.classList.remove('hidden');
         }
 
-        // addDay, removeDay, updatePlaceLabels, attachDeleteEvents, attachDragAndDrop, attachAutocomplete, searchKakaoPlaces 함수는 동일하게 유지
         function addDay() {
             dayCount++;
             const dayBlock = document.createElement('div');
@@ -395,12 +400,16 @@
                         <input type="text" id="start-point-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="예: 제주국제공항" value="${defaultStartName}" data-lat="${defaultStartLat}" data-lng="${defaultStartLng}">
                         <ul class="autocomplete-list"></ul>
                     </div>
-                    <div class="flex items-center gap-4 input-container">
-                        <label for="start-time-${dayCount}" class="text-gray-700 w-28">출발 시간:</label>
-                        <select id="start-time-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400">
+                    <!-- 출발 시간과 비고 입력 필드 수정 -->
+                    <div class="flex items-start sm:items-center flex-col sm:flex-row gap-4 start-time-remark-row">
+                        <label for="start-time-${dayCount}" class="text-gray-700 w-28 shrink-0">출발 시간:</label>
+                        <select id="start-time-${dayCount}" class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 shrink-0">
                            ${timeOptions}
                         </select>
+                        <label for="start-remark-${dayCount}" class="text-gray-700 w-16 shrink-0 sm:ml-4">비고:</label>
+                        <input type="text" id="start-remark-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 w-full sm:w-auto" placeholder="출발 비고 (예: 아침 식사, 숙소 체크아웃)">
                     </div>
+                    <!-- End of Modified Block -->
                 </div>
                 <div class="space-y-4 drag-container" id="places-container-${dayCount}">
                     <div class="flex items-center gap-4 place-input draggable-place place-row" draggable="true">
@@ -652,7 +661,6 @@
         addDayBtn.addEventListener('click', addDay);
         removeDayBtn.addEventListener('click', removeDay);
 
-        // calculateBtn 로직 및 processSchedule, getDrivingDuration, renderResults는 이전과 동일
         calculateBtn.addEventListener('click', async () => {
             showLoading();
             const allSchedules = [];
@@ -662,6 +670,7 @@
                 const dateInput = dayBlock.querySelector('.date-input');
                 const startTimeInput = dayBlock.querySelector(`#start-time-${i}`); 
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`); // 출발 비고 추가
                 
                 if (!startPointInput.value) {
                     hideLoading();
@@ -681,7 +690,8 @@
                 daySchedule.startTime = startTimeInput.value;
                 daySchedule.startPoint = {
                     name: startPointInput.value,
-                    coords: { lat: startPointInput.dataset.lat, lng: startPointInput.dataset.lng }
+                    coords: { lat: startPointInput.dataset.lat, lng: startPointInput.dataset.lng },
+                    remark: startRemarkInput.value // 출발 비고 저장
                 };
 
                 const placesInputs = dayBlock.querySelectorAll(`.place-input`);
@@ -923,7 +933,7 @@
                 <td class="py-3 px-6 text-left whitespace-nowrap">${Utilities.formatTime(lastTime)}</td>
                 <td class="py-3 px-6 text-left"></td>
                 <td class="py-3 px-6 text-left font-bold text-gray-800">${daySchedule.startPoint.name} (출발)</td>
-                <td class="py-3 px-6 text-left"></td>
+                <td class="py-3 px-6 text-left">${daySchedule.startPoint.remark || ''}</td> <!-- 출발 비고 출력 -->
             `;
             tbody.appendChild(startRow);
 
@@ -1000,7 +1010,6 @@
             }
         };
 
-        // Capture function (기존 유지)
         window.captureElement = function(elementId, filename) {
             const element = document.getElementById(elementId);
             if (!element) {
@@ -1040,6 +1049,7 @@
                 const dateInput = dayBlock.querySelector('.date-input');
                 const startTimeInput = dayBlock.querySelector(`#start-time-${i}`);
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`); // 출발 비고 필드 가져오기
                 const placesInputs = dayBlock.querySelectorAll(`.place-input`);
 
                 const placesData = [];
@@ -1062,7 +1072,8 @@
                     startTime: startTimeInput.value,
                     startPoint: {
                         name: startPointInput.value,
-                        coords: { lat: startPointInput.dataset.lat || '', lng: startPointInput.dataset.lng || '' }
+                        coords: { lat: startPointInput.dataset.lat || '', lng: startPointInput.dataset.lng || '' },
+                        remark: startRemarkInput.value || '' // 출발 비고 저장
                     },
                     places: placesData
                 });
@@ -1071,18 +1082,16 @@
             return {
                 dayCount: dayCount,
                 schedules: schedules,
-                version: '1.0' 
+                version: '1.1' // 버전 업데이트
             };
         }
 
         function getInitialFilename() {
-            // 사용자 요청에 따라 기본 파일명 없이 빈 문자열을 반환합니다.
             return ''; 
         }
         
         // Save 버튼 클릭 시 파일명 입력 모달을 띄웁니다.
         saveBtn.addEventListener('click', (event) => {
-            // 브라우저의 기본 동작 방지 (혹시 모를)
             event.preventDefault(); 
             
             const data = exportScheduleData();
@@ -1091,8 +1100,7 @@
                  return;
             }
 
-            // Show filename modal instead of immediate download
-            filenameInput.value = getInitialFilename(); // 초기 파일명 설정: 빈 문자열
+            filenameInput.value = getInitialFilename(); 
             filenameError.classList.add('hidden');
             filenameModal.classList.remove('hidden');
             filenameInput.focus();
@@ -1121,10 +1129,8 @@
                 return;
             }
             
-            // Hide modal before starting download process
             filenameModal.classList.add('hidden');
             
-            // Get data and prepare for download
             const data = exportScheduleData();
             const jsonString = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonString], { type: 'application/json' });
@@ -1132,11 +1138,8 @@
             
             const link = document.createElement('a');
             link.href = url;
-            
-            // Use the user-provided name + .json extension
             link.download = `${name}.json`;
             
-            // The actual download action
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1188,11 +1191,15 @@
                 dayBlock.querySelector('.date-input').value = schedule.date;
                 dayBlock.querySelector(`#start-time-${dayCount}`).value = schedule.startTime; 
                 
-                // Set Start Point
+                // Set Start Point and Remark
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`); // 출발 비고 필드 가져오기
+                
                 startPointInput.value = schedule.startPoint.name;
                 startPointInput.dataset.lat = schedule.startPoint.coords.lat;
                 startPointInput.dataset.lng = schedule.startPoint.coords.lng;
+                // 이전 버전 파일에는 startPoint.remark가 없을 수 있으므로 안전하게 처리
+                startRemarkInput.value = schedule.startPoint.remark || ''; 
                 
                 const placesContainer = dayBlock.querySelector('.drag-container');
                 placesContainer.innerHTML = ''; // 기존에 addDay가 생성한 초기 장소 제거
