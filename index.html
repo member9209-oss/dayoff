@@ -122,6 +122,37 @@
             justify-content: space-between;
             align-items: center;
         }
+        /* New styles for Favorite dropdown */
+        .favorite-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .favorite-content {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background-color: white;
+            min-width: 250px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .favorite-content ul {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0;
+            list-style: none;
+        }
+        .favorite-content li {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f4f8;
+        }
+        .favorite-content li:hover {
+            background-color: #f7fafc;
+        }
 
         @media (max-width: 768px) {
             .place-row {
@@ -137,8 +168,9 @@
                 margin-top: 0.5rem;
             }
             /* 모바일에서 출발 시간/비고 입력 필드가 세로로 쌓이도록 조정 */
-            .start-time-remark-row > * {
-                 width: 100%;
+            .start-time-remark-row {
+                 flex-direction: column;
+                 align-items: flex-start !important;
             }
             .start-time-remark-row label.w-28 {
                  width: auto;
@@ -146,11 +178,15 @@
             .start-time-remark-row select {
                  width: 100%;
             }
+            .start-time-remark-row .w-16 {
+                width: auto;
+                margin-left: 0 !important;
+                margin-top: 1rem;
+            }
         }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <!-- 비밀번호 입력 모달 -->
     <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
         <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">비밀번호를 입력하세요</h3>
@@ -160,7 +196,6 @@
         </div>
     </div>
 
-    <!-- 파일명 입력 모달 (저장 시 사용) -->
     <div id="filename-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">파일 저장 이름 입력</h3>
@@ -173,6 +208,41 @@
         </div>
     </div>
 
+    <div id="favorite-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl p-8 max-w-xl w-full shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">즐겨찾기 장소 관리</h3>
+            
+            <div id="favorite-form" class="space-y-4 mb-6 p-4 border rounded-lg bg-gray-50">
+                <p class="font-semibold text-gray-700">새 즐겨찾기 추가:</p>
+                
+                <!-- 1. Custom Name Input (나만의 이름) -->
+                <div class="flex items-center gap-4">
+                    <label class="text-gray-700 w-24">나만의 이름:</label>
+                    <input type="text" id="fav-custom-name-input" class="flex-1 p-2 border border-gray-300 rounded-lg" placeholder="예: 해변 근처 카페">
+                </div>
+                
+                <!-- 2. Specific Place Input (구체적 장소 - 자동완성) -->
+                <div class="flex items-center gap-4 input-container">
+                    <label class="text-gray-700 w-24">구체적 장소:</label>
+                    <input type="text" id="fav-place-name-input" class="flex-1 p-2 border border-gray-300 rounded-lg" placeholder="장소명 입력 (자동완성)">
+                    <ul class="autocomplete-list"></ul>
+                </div>
+                
+                <button id="add-favorite-btn" class="w-full bg-green-500 text-white font-bold py-2 rounded-lg hover:bg-green-600 transition-colors">
+                    <i class="fas fa-bookmark mr-2"></i>즐겨찾기 추가
+                </button>
+            </div>
+            
+            <div id="favorite-list-container" class="space-y-2 max-h-64 overflow-y-auto">
+                </div>
+            <p id="no-favorites" class="text-gray-500 text-center mt-4 hidden">등록된 즐겨찾기가 없습니다.</p>
+            
+            <div class="mt-6 flex justify-end">
+                 <button id="close-favorite-modal-btn" class="bg-gray-400 text-white font-bold py-2 px-4 rounded-full hover:bg-gray-500 transition-colors">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <div id="main-content" class="hidden">
         <div class="container">
             <header class="text-center mb-10">
@@ -181,20 +251,20 @@
             </header>
 
             <div id="app" class="space-y-8">
-                <div class="flex justify-center gap-4 mb-8">
-                    <!-- 저장 버튼: 클릭 시 파일명 모달을 띄움 -->
+                <div class="flex justify-center gap-4 mb-8 flex-wrap">
+                    <button id="manage-favorites-btn" class="bg-pink-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-pink-600 transition-colors">
+                        <i class="fas fa-heart mr-2"></i>즐겨찾기 관리
+                    </button>
                     <button id="save-btn" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-800 transition-colors">
                         <i class="fas fa-file-export mr-2"></i>저장 (.json)
                     </button>
-                    <!-- 불러오기 버튼 -->
                     <button id="load-btn" class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-500 transition-colors">
                         <i class="fas fa-file-import mr-2"></i>불러오기 (.json)
                     </button>
                 </div>
                 
                 <div id="day-container" class="space-y-8">
-                    <!-- Day blocks will be added here -->
-                </div>
+                    </div>
 
                 <div class="flex justify-center gap-4 mt-8">
                     <button id="add-day-btn" class="bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition-colors">
@@ -211,12 +281,10 @@
                 <div id="results" class="mt-8 hidden">
                     <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">여행 동선 결과</h2>
                     <div id="results-container" class="space-y-6">
-                        <!-- Results will be displayed here -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- 알림 및 확인 모달 -->
             <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-40">
                 <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
                     <p id="notification-message" class="text-gray-800 text-lg"></p>
@@ -224,10 +292,8 @@
                 </div>
             </div>
             
-            <!-- 파일 불러오기를 위한 숨겨진 Input -->
             <input type="file" id="file-load-input" accept=".json" class="hidden">
 
-            <!-- 로딩 오버레이 -->
             <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden z-40">
                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
                 <p class="text-white text-lg">동선 계산 중...</p>
@@ -251,6 +317,7 @@
         const calculateBtn = document.getElementById('calculate-btn');
         const saveBtn = document.getElementById('save-btn');
         const loadBtn = document.getElementById('load-btn');
+        const manageFavoritesBtn = document.getElementById('manage-favorites-btn'); // 즐겨찾기 관리 버튼
         const resultsDiv = document.getElementById('results');
         const resultsContainer = document.getElementById('results-container');
         const notificationModal = document.getElementById('notification-modal');
@@ -258,17 +325,31 @@
         const modalButtonContainer = document.getElementById('modal-button-container');
         const loadingOverlay = document.getElementById('loading-overlay');
         
-        // New Filename Modal elements
         const filenameModal = document.getElementById('filename-modal');
         const filenameInput = document.getElementById('filename-input');
         const filenameSubmitBtn = document.getElementById('filename-submit-btn');
         const filenameCancelBtn = document.getElementById('filename-cancel-btn');
         const filenameError = document.getElementById('filename-error');
 
-        // PC 파일 불러오기를 위한 숨겨진 Input
+        // Favorite Modal elements (UPDATED)
+        const favoriteModal = document.getElementById('favorite-modal');
+        const closeFavoriteModalBtn = document.getElementById('close-favorite-modal-btn');
+        const favCustomNameInput = document.getElementById('fav-custom-name-input'); // '나만의 이름'
+        const favPlaceNameInput = document.getElementById('fav-place-name-input'); // '구체적 장소' (자동완성)
+        const addFavoriteBtn = document.getElementById('add-favorite-btn');
+        const favoriteListContainer = document.getElementById('favorite-list-container');
+        const noFavoritesText = document.getElementById('no-favorites');
+
         const fileLoadInput = document.getElementById('file-load-input');
 
         let dayCount = 0;
+        let favorites = []; // 즐겨찾기 데이터를 저장할 배열
+        
+        // 즐겨찾기 폼 입력 필드에 데이터-속성을 추가하여 좌표를 임시 저장
+        // 좌표는 '구체적 장소' 입력 필드에 저장됩니다.
+        favPlaceNameInput.dataset.lat = '';
+        favPlaceNameInput.dataset.lng = '';
+        
         let lastDayEndPoint = {
             name: '제주공항 주차장출입구',
             coords: { lat: '33.507421', lng: '126.494208' }
@@ -280,6 +361,9 @@
             if (passwordInput.value === CORRECT_PASSWORD) {
                 passwordModal.classList.add('hidden');
                 mainContent.classList.remove('hidden');
+                // 즐겨찾기 데이터 로드
+                favorites = loadFavorites();
+                
                 if (dayCount === 0) {
                     addDay(); 
                 }
@@ -288,6 +372,121 @@
             }
         }
         
+        // --- Favorite Management Functions (New Logic) ---
+        function loadFavorites() {
+            try {
+                const stored = localStorage.getItem('travel_schedule_favorites');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                console.error("Failed to load favorites from localStorage:", e);
+                return [];
+            }
+        }
+        
+        function saveFavorites() {
+            try {
+                localStorage.setItem('travel_schedule_favorites', JSON.stringify(favorites));
+            } catch (e) {
+                console.error("Failed to save favorites to localStorage:", e);
+                showNotification("즐겨찾기 저장에 실패했습니다. 브라우저 저장 공간을 확인해주세요.");
+            }
+        }
+
+        function renderFavoriteList() {
+            favoriteListContainer.innerHTML = '';
+            if (favorites.length === 0) {
+                noFavoritesText.classList.remove('hidden');
+                return;
+            }
+            noFavoritesText.classList.add('hidden');
+
+            favorites.forEach((fav, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 border-b hover:bg-gray-50';
+                
+                item.innerHTML = `
+                    <div>
+                        <p class="font-semibold text-gray-800">${fav.customName}</p>
+                        <p class="text-sm text-gray-500">장소: ${fav.place.name}</p> 
+                    </div>
+                    <button data-index="${index}" class="remove-fav-btn text-red-500 hover:text-red-700 transition-colors p-2">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                favoriteListContainer.appendChild(item);
+            });
+            
+            // Attach delete events
+            favoriteListContainer.querySelectorAll('.remove-fav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.dataset.index);
+                    favorites.splice(index, 1);
+                    saveFavorites();
+                    renderFavoriteList();
+                    // 모든 드롭다운도 업데이트해야 함
+                    updateAllFavoriteDropdowns(); 
+                });
+            });
+        }
+        
+        manageFavoritesBtn.addEventListener('click', () => {
+            renderFavoriteList();
+            favoriteModal.classList.remove('hidden');
+        });
+
+        closeFavoriteModalBtn.addEventListener('click', () => {
+            favoriteModal.classList.add('hidden');
+            // 폼 초기화
+            favCustomNameInput.value = '';
+            favPlaceNameInput.value = '';
+            favPlaceNameInput.dataset.lat = '';
+            favPlaceNameInput.dataset.lng = '';
+        });
+
+        // Add Favorite Button Handler (UPDATED)
+        addFavoriteBtn.addEventListener('click', () => {
+            const customName = favCustomNameInput.value.trim();
+            const placeName = favPlaceNameInput.value.trim();
+            const lat = favPlaceNameInput.dataset.lat;
+            const lng = favPlaceNameInput.dataset.lng;
+
+            if (!customName || !placeName) {
+                showNotification('나만의 이름과 구체적 장소명은 필수 입력 항목입니다.');
+                return;
+            }
+
+            // 비주소성 장소명 (중식/석식)도 구체적 장소명으로 저장하려면 좌표 체크 로직을 제외해야 함
+            const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName.toLowerCase());
+            
+            if (!isNonAddress && (lat === '' || lng === '')) {
+                 showNotification('구체적 장소명을 입력 후 자동완성 리스트에서 정확한 장소를 선택해야 합니다.');
+                 return;
+            }
+
+            favorites.push({
+                id: Date.now(),
+                customName: customName, // 요청 #2 반영
+                place: { // 요청 #2 반영
+                    name: placeName,
+                    coords: { lat: lat, lng: lng }
+                }
+                // 체류시간, 비고는 저장하지 않음 (요청 #1 반영)
+            });
+
+            saveFavorites();
+            renderFavoriteList();
+            updateAllFavoriteDropdowns(); 
+            
+            // 폼 초기화
+            favCustomNameInput.value = '';
+            favPlaceNameInput.value = '';
+            favPlaceNameInput.dataset.lat = '';
+            favPlaceNameInput.dataset.lng = '';
+        });
+        
+        // 즐겨찾기 폼에 자동 완성 연결 (이제 '구체적 장소'에만 연결)
+        attachAutocomplete(favPlaceNameInput);
+
         // --- Helper functions ---
         function showLoading() {
             loadingOverlay.classList.remove('hidden');
@@ -390,9 +589,21 @@
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-2xl font-bold text-indigo-700 w-28 no-select">${dayCount}일차</h3>
                     <input type="date" class="date-input p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" value="${defaultDate}">
-                    <button class="add-place-btn bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors">
-                        <i class="fas fa-plus mr-2"></i>장소 추가
-                    </button>
+                    
+                    <div class="flex gap-2">
+                        <div class="favorite-dropdown">
+                            <button class="toggle-fav-btn bg-yellow-500 text-white font-bold py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors">
+                                <i class="fas fa-star mr-2"></i>즐겨찾기
+                            </button>
+                            <div class="favorite-content hidden">
+                                <ul class="favorites-list-dropdown">
+                                    </ul>
+                            </div>
+                        </div>
+                        <button class="add-place-btn bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>장소 추가
+                        </button>
+                    </div>
                 </div>
                 <div class="space-y-4">
                     <div class="flex items-center gap-4 input-container">
@@ -400,17 +611,15 @@
                         <input type="text" id="start-point-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="예: 제주국제공항" value="${defaultStartName}" data-lat="${defaultStartLat}" data-lng="${defaultStartLng}">
                         <ul class="autocomplete-list"></ul>
                     </div>
-                    <!-- 출발 시간과 비고 입력 필드 수정 -->
                     <div class="flex items-start sm:items-center flex-col sm:flex-row gap-4 start-time-remark-row">
                         <label for="start-time-${dayCount}" class="text-gray-700 w-28 shrink-0">출발 시간:</label>
                         <select id="start-time-${dayCount}" class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 shrink-0">
                            ${timeOptions}
                         </select>
                         <label for="start-remark-${dayCount}" class="text-gray-700 w-16 shrink-0 sm:ml-4">비고:</label>
-                        <input type="text" id="start-remark-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 w-full sm:w-auto" placeholder="출발 비고 (예: 아침 식사, 숙소 체크아웃)">
+                        <input type="text" id="start-remark-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg w-full sm:w-auto" placeholder="출발 비고 (예: 아침 식사, 숙소 체크아웃)">
                     </div>
-                    <!-- End of Modified Block -->
-                </div>
+                    </div>
                 <div class="space-y-4 drag-container" id="places-container-${dayCount}">
                     <div class="flex items-center gap-4 place-input draggable-place place-row" draggable="true">
                         <label class="text-gray-700 place-label no-select">장소 1:</label>
@@ -433,27 +642,14 @@
             const addPlaceBtn = dayBlock.querySelector('.add-place-btn');
             addPlaceBtn.addEventListener('click', () => {
                 const placesContainer = dayBlock.querySelector(`.drag-container`);
-                const placeInput = document.createElement('div');
-                placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
-                placeInput.setAttribute('draggable', 'true');
-                placeInput.innerHTML = `
-                    <label class="text-gray-700 place-label no-select">장소:</label>
-                    <div class="flex-1 input-container place-name-input">
-                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력">
-                        <ul class="autocomplete-list"></ul>
-                    </div>
-                    <div class="w-24 stay-duration-input">
-                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)">
-                    </div>
-                    <div class="flex-1 remark-input">
-                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)">
-                    </div>
-                    <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
-                `;
+                const placeInput = createPlaceInput();
                 placesContainer.appendChild(placeInput);
                 attachAutocomplete(placeInput.querySelector('input[type="text"]'));
                 updatePlaceLabels(dayBlock);
             });
+
+            // 즐겨찾기 드롭다운 이벤트 연결
+            attachFavoriteDropdown(dayBlock);
 
             attachAutocomplete(dayBlock.querySelector(`input[id^="start-point"]`));
             const initialPlaceInput = dayBlock.querySelector(`.place-input input[placeholder="장소명 입력"]`);
@@ -461,7 +657,133 @@
             attachDeleteEvents(dayBlock);
             attachDragAndDrop(dayBlock);
         }
+
+        // 즐겨찾기 드롭다운 생성 및 이벤트 연결
+        function attachFavoriteDropdown(dayBlock) {
+            const dropdown = dayBlock.querySelector('.favorite-dropdown');
+            const toggleBtn = dayBlock.querySelector('.toggle-fav-btn');
+            const content = dayBlock.querySelector('.favorite-content');
+            const list = dayBlock.querySelector('.favorites-list-dropdown');
+            
+            // 드롭다운 토글 기능
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                content.classList.toggle('hidden');
+                if (!content.classList.contains('hidden')) {
+                    renderFavoriteDropdownList(list);
+                }
+            });
+
+            // 외부 클릭 시 닫기
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target)) {
+                    content.classList.add('hidden');
+                }
+            });
+            
+            // 목록 클릭 시 장소 추가
+            list.addEventListener('click', (e) => {
+                const li = e.target.closest('li');
+                if (li) {
+                    const favId = parseInt(li.dataset.favId);
+                    const fav = favorites.find(f => f.id === favId);
+                    if (fav) {
+                        const placesContainer = dayBlock.querySelector(`.drag-container`);
+                        const placeInput = createPlaceInput(fav); // 새 즐겨찾기 구조를 넘겨줌
+                        placesContainer.appendChild(placeInput);
+                        attachAutocomplete(placeInput.querySelector('input[type="text"]'));
+                        updatePlaceLabels(dayBlock);
+                        content.classList.add('hidden'); // 추가 후 드롭다운 닫기
+                    }
+                }
+            });
+            
+            // 최초 로드 시 목록 렌더링
+            renderFavoriteDropdownList(list);
+        }
+
+        // 즐겨찾기 드롭다운 목록 렌더링 (UPDATED)
+        function renderFavoriteDropdownList(listElement) {
+            listElement.innerHTML = '';
+            if (favorites.length === 0) {
+                listElement.innerHTML = '<li class="text-gray-500 text-center py-3">등록된 즐겨찾기 없음</li>';
+                return;
+            }
+
+            favorites.forEach(fav => {
+                const li = document.createElement('li');
+                li.dataset.favId = fav.id;
+                // fav.customName과 fav.place.name을 표시
+                li.innerHTML = `
+                    <div class="font-semibold">${fav.customName}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">${fav.place.name}</div>
+                `;
+                listElement.appendChild(li);
+            });
+        }
         
+        // 모든 일차의 즐겨찾기 드롭다운 업데이트
+        function updateAllFavoriteDropdowns() {
+            document.querySelectorAll('.favorites-list-dropdown').forEach(list => {
+                renderFavoriteDropdownList(list);
+            });
+        }
+
+        // 장소 입력 필드 생성 (UPDATED Logic for Favorite Application)
+        function createPlaceInput(fav = {}) {
+            let placeDisplayName = fav.name || '';
+            let placeLat = fav.coords?.lat || '';
+            let placeLng = fav.coords?.lng || '';
+            let placeStayDuration = fav.stayDuration || '';
+            let placeRemark = fav.remark || '';
+            
+            // 파일 불러오기 시 (구조가 fav.name, fav.coords)가 아닌 
+            // 즐겨찾기 드롭다운 클릭 시 (구조가 fav.customName, fav.place.name 등)의 경우
+            if (fav.customName) { 
+                // 이는 즐겨찾기 드롭다운에서 선택된 항목
+                placeDisplayName = fav.place.name;
+                placeLat = fav.place.coords.lat;
+                placeLng = fav.place.coords.lng;
+                placeStayDuration = ''; // 요청 #1: 체류 시간은 비워둠
+                placeRemark = '';       // 요청 #1: 비고는 비워둠
+            } else if (fav.name) {
+                // 이는 파일에서 기존 일정의 장소를 불러올 때
+                placeDisplayName = fav.name;
+                placeLat = fav.coords?.lat || '';
+                placeLng = fav.coords?.lng || '';
+                placeStayDuration = fav.stayDuration || '';
+                placeRemark = fav.remark || '';
+            }
+
+             const placeInput = document.createElement('div');
+                placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
+                placeInput.setAttribute('draggable', 'true');
+                placeInput.innerHTML = `
+                    <label class="text-gray-700 place-label no-select">장소:</label>
+                    <div class="flex-1 input-container place-name-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
+                            placeholder="장소명 입력" 
+                            value="${placeDisplayName}" 
+                            data-lat="${placeLat}" 
+                            data-lng="${placeLng}">
+                        <ul class="autocomplete-list"></ul>
+                    </div>
+                    <div class="w-24 stay-duration-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
+                            placeholder="체류 시간(분)" 
+                            value="${placeStayDuration}">
+                    </div>
+                    <div class="flex-1 remark-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
+                            placeholder="비고 (예: 점심 식사)" 
+                            value="${placeRemark}">
+                    </div>
+                    <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
+                `;
+            return placeInput;
+        }
+
+
         function removeDay() {
             if (dayCount > 1) {
                 const lastDayBlock = document.getElementById(`day-${dayCount}`);
@@ -498,7 +820,8 @@
             const placeInputs = placesContainer.querySelectorAll('.place-input');
             placeInputs.forEach((input, index) => {
                 const label = input.querySelector('.place-label');
-                label.textContent = `장소 ${index + 1}:`;
+                // label이 장소 입력 필드와 항상 동등한 위치에 있도록
+                if(label) label.textContent = `장소 ${index + 1}:`;
             });
         }
 
@@ -586,6 +909,7 @@
                 if (query.length < 2) {
                     listElement.innerHTML = '';
                     listElement.classList.remove('visible');
+                    // 장소명, 좌표 초기화
                     delete inputElement.dataset.lat;
                     delete inputElement.dataset.lng;
                     return;
@@ -617,6 +941,7 @@
                 const li = e.target.closest('li');
                 if (li) {
                     const inputElement = li.closest('.input-container').querySelector('input');
+                    // 장소명 입력 후 좌표와 장소명 속성 저장
                     inputElement.value = li.dataset.name;
                     inputElement.dataset.lat = li.dataset.lat;
                     inputElement.dataset.lng = li.dataset.lng;
@@ -670,7 +995,7 @@
                 const dateInput = dayBlock.querySelector('.date-input');
                 const startTimeInput = dayBlock.querySelector(`#start-time-${i}`); 
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
-                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`); // 출발 비고 추가
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`);
                 
                 if (!startPointInput.value) {
                     hideLoading();
@@ -691,7 +1016,7 @@
                 daySchedule.startPoint = {
                     name: startPointInput.value,
                     coords: { lat: startPointInput.dataset.lat, lng: startPointInput.dataset.lng },
-                    remark: startRemarkInput.value // 출발 비고 저장
+                    remark: startRemarkInput.value
                 };
 
                 const placesInputs = dayBlock.querySelectorAll(`.place-input`);
@@ -773,7 +1098,13 @@
                 if (destination.coords && currentPoint.coords) {
                     const travelResult = await getDrivingDuration(currentPoint, destination);
                     travelDuration = travelResult.duration;
-                    routeLink = `https://map.kakao.com/link/from/${segmentFrom.name},${segmentFrom.coords.lat},${segmentFrom.coords.lng}/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
+                    
+                    // 경로가 유효할 경우에만 링크 생성
+                    if (travelDuration > 0 || travelResult.routeFound) {
+                        routeLink = `https://map.kakao.com/link/from/${segmentFrom.name},${segmentFrom.coords.lat},${segmentFrom.coords.lng}/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
+                    }
+                    
+                    // 경로를 찾지 못했으나 크래시를 방지했으므로, travelDuration은 0이거나 계산된 값일 것임.
                 }
                 
                 const arrivalTime = new Date(currentTime.getTime() + travelDuration * 60 * 1000);
@@ -783,6 +1114,8 @@
                 
                 const departureTime = (stayDurationValue !== '일정종료') ? new Date(arrivalTime.getTime() + stayDurationValue * 60 * 1000) : null;
                 
+                let travelStatus = travelDuration > 0 ? `${travelDuration}분 소요` : (destination.coords && currentPoint.coords ? '경로 미탐색' : '장소 이동 없음');
+
                 travelPlan.push({
                     from: segmentFrom.name,
                     to: segmentTo.name,
@@ -791,7 +1124,8 @@
                     stayDuration: stayDurationValue,
                     departureTime: departureTime,
                     remark: destination.remark,
-                    routeLink: routeLink
+                    routeLink: routeLink,
+                    travelStatus: travelStatus // 결과 테이블에 표시할 상태 추가
                 });
                 
                 if (stayDurationValue === '일정종료') {
@@ -836,6 +1170,7 @@
             let retryCount = 0;
             const maxRetries = 3;
             let duration = 0;
+            let routeFound = false; // 경로 탐색 성공 여부
 
             while (retryCount < maxRetries) {
                 try {
@@ -845,25 +1180,40 @@
                     });
                     const json = await response.json();
                     
-                    if (json.routes && json.routes.length > 0) {
+                    // 🚨🚨🚨 방어적 코드 시작 🚨🚨🚨
+                    if (json.routes && json.routes.length > 0 && json.routes[0].summary) {
                         const route = json.routes[0];
                         const durationInSeconds = route.summary.duration;
                         duration = Math.floor(durationInSeconds / 60);
-                        break;
+                        routeFound = true; 
+                        break; // 성공하면 루프 종료
+                    } else if (json.code === 104) {
+                        // 104: 경로 탐색 결과 없음 (좌표는 유효하나 길찾기 불가)
+                        console.warn(`경로 탐색 불가: ${start.name} -> ${end.name}`);
+                        duration = 0; // 경로 없으면 0분으로 처리
+                        routeFound = false; 
+                        break; // 경로를 못찾은 것이므로 재시도 불필요
                     } else {
-                        break;
+                        // 기타 예상치 못한 응답 구조
+                        throw new Error("Unexpected API response structure or data."); 
                     }
+                    // 🚨🚨🚨 방어적 코드 끝 🚨🚨🚨
                 } catch (error) {
                     retryCount++;
                     if (retryCount < maxRetries) {
+                        console.error(`카카오 내비 API 호출 실패 (재시도 ${retryCount}):`, error.message);
                         await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000));
                     } else {
-                        console.error('카카오 내비 API 호출 실패 (최대 재시도 횟수 초과):', error);
+                        console.error('카카오 내비 API 호출 실패 (최대 재시도 횟수 초과):', error.message);
+                        // 최대 재시도 후에도 실패하면 duration 0으로 처리하고 루프 종료
+                        duration = 0;
+                        routeFound = false;
+                        break; 
                     }
                 }
             }
 
-            return { duration: duration };
+            return { duration: duration, routeFound: routeFound };
         }
         
         function renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink) {
@@ -933,7 +1283,7 @@
                 <td class="py-3 px-6 text-left whitespace-nowrap">${Utilities.formatTime(lastTime)}</td>
                 <td class="py-3 px-6 text-left"></td>
                 <td class="py-3 px-6 text-left font-bold text-gray-800">${daySchedule.startPoint.name} (출발)</td>
-                <td class="py-3 px-6 text-left">${daySchedule.startPoint.remark || ''}</td> <!-- 출발 비고 출력 -->
+                <td class="py-3 px-6 text-left">${daySchedule.startPoint.remark || ''}</td> 
             `;
             tbody.appendChild(startRow);
 
@@ -943,9 +1293,14 @@
                 
                 const travelRow = document.createElement('tr');
                 travelRow.className = 'bg-gray-50 border-b border-gray-200 hover:bg-gray-100';
+                
+                const travelDurationText = item.travelStatus === '경로 미탐색' 
+                    ? `<span class="text-red-500 font-bold">${item.travelStatus}</span>`
+                    : item.travelStatus;
+
                 travelRow.innerHTML = `
                     <td class="py-2 px-6 text-left">${Utilities.formatTime(travelStartTime)} ~ ${Utilities.formatTime(travelEndTime)}</td>
-                    <td class="py-2 px-6 text-left text-gray-600">${item.travelDuration}분</td>
+                    <td class="py-2 px-6 text-left text-gray-600">${travelDurationText}</td>
                     <td class="py-2 px-6 text-left">${item.from} → ${item.to}
                         ${item.routeLink ? `<a href="${item.routeLink}" target="_blank" class="text-blue-500 hover:underline ml-2"><i class="fas fa-map-marker-alt"></i></a>` : ''}
                     </td>
@@ -1038,7 +1393,7 @@
             });
         };
 
-        // --- PC File Save/Load functionality (Updated for filename input) ---
+        // --- PC File Save/Load functionality ---
 
         function exportScheduleData() {
             const schedules = [];
@@ -1049,7 +1404,7 @@
                 const dateInput = dayBlock.querySelector('.date-input');
                 const startTimeInput = dayBlock.querySelector(`#start-time-${i}`);
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
-                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`); // 출발 비고 필드 가져오기
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`);
                 const placesInputs = dayBlock.querySelectorAll(`.place-input`);
 
                 const placesData = [];
@@ -1073,7 +1428,7 @@
                     startPoint: {
                         name: startPointInput.value,
                         coords: { lat: startPointInput.dataset.lat || '', lng: startPointInput.dataset.lng || '' },
-                        remark: startRemarkInput.value || '' // 출발 비고 저장
+                        remark: startRemarkInput.value || ''
                     },
                     places: placesData
                 });
@@ -1082,7 +1437,8 @@
             return {
                 dayCount: dayCount,
                 schedules: schedules,
-                version: '1.1' // 버전 업데이트
+                favorites: favorites, // 즐겨찾기 데이터 포함 (새 구조)
+                version: '1.4' // 버전 업데이트 (버그 픽스)
             };
         }
 
@@ -1090,7 +1446,6 @@
             return ''; 
         }
         
-        // Save 버튼 클릭 시 파일명 입력 모달을 띄웁니다.
         saveBtn.addEventListener('click', (event) => {
             event.preventDefault(); 
             
@@ -1106,15 +1461,12 @@
             filenameInput.focus();
         });
 
-        // 파일명 모달의 저장 버튼 클릭 핸들러
         filenameSubmitBtn.addEventListener('click', performDownload);
         
-        // 파일명 모달의 취소 버튼 클릭 핸들러
         filenameCancelBtn.addEventListener('click', () => {
             filenameModal.classList.add('hidden');
         });
 
-        // 파일명 입력 필드에서 Enter 키를 눌렀을 때 다운로드 실행
         filenameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 performDownload();
@@ -1150,7 +1502,7 @@
 
 
         loadBtn.addEventListener('click', () => {
-            fileLoadInput.click(); // 숨겨진 파일 입력 필드 클릭
+            fileLoadInput.click();
         });
         
         fileLoadInput.addEventListener('change', (e) => {
@@ -1169,12 +1521,34 @@
                 }
             };
             reader.readAsText(file);
-            // 같은 파일을 다시 로드할 수 있도록 입력값을 초기화합니다.
             e.target.value = null; 
         });
 
         function loadScheduleData(data) {
-            // Clear current days
+            // Load Favorites first
+            if (data.favorites && Array.isArray(data.favorites)) {
+                // 기존 버전의 즐겨찾기(stayDuration, remark 포함)를 처리하거나 새 버전을 로드합니다.
+                favorites = data.favorites.map(fav => {
+                    if (fav.customName && fav.place) {
+                        return fav; // 새 버전 구조
+                    }
+                    // 기존 버전 구조 (v1.2 이하): name, coords, stayDuration, remark
+                    // 새 구조로 변환하여 저장 (단, 체류시간/비고는 무시)
+                    return {
+                        id: fav.id,
+                        customName: fav.name, 
+                        place: {
+                            name: fav.name,
+                            coords: fav.coords
+                        }
+                    };
+                });
+                saveFavorites(); // 로컬 스토리지에 업데이트
+            } else {
+                 favorites = [];
+                 saveFavorites();
+            }
+
             dayContainer.innerHTML = '';
             dayCount = 0;
 
@@ -1187,49 +1561,33 @@
                 addDay();
                 const dayBlock = document.getElementById(`day-${dayCount}`);
                 
-                // Set Date and Start Time
                 dayBlock.querySelector('.date-input').value = schedule.date;
                 dayBlock.querySelector(`#start-time-${dayCount}`).value = schedule.startTime; 
                 
-                // Set Start Point and Remark
                 const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
-                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`); // 출발 비고 필드 가져오기
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`);
                 
                 startPointInput.value = schedule.startPoint.name;
                 startPointInput.dataset.lat = schedule.startPoint.coords.lat;
                 startPointInput.dataset.lng = schedule.startPoint.coords.lng;
-                // 이전 버전 파일에는 startPoint.remark가 없을 수 있으므로 안전하게 처리
                 startRemarkInput.value = schedule.startPoint.remark || ''; 
                 
                 const placesContainer = dayBlock.querySelector('.drag-container');
-                placesContainer.innerHTML = ''; // 기존에 addDay가 생성한 초기 장소 제거
+                placesContainer.innerHTML = ''; 
 
-                // Load Places
                 schedule.places.forEach((place, index) => {
-                    const placeInput = document.createElement('div');
-                    placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
-                    placeInput.setAttribute('draggable', 'true');
-                    placeInput.innerHTML = `
-                        <label class="text-gray-700 place-label no-select">장소 ${index + 1}:</label>
-                        <div class="flex-1 input-container place-name-input">
-                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력" value="${place.name}" data-lat="${place.coords.lat}" data-lng="${place.coords.lng}">
-                            <ul class="autocomplete-list"></ul>
-                        </div>
-                        <div class="w-24 stay-duration-input">
-                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)" value="${place.stayDuration}">
-                        </div>
-                        <div class="flex-1 remark-input">
-                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)" value="${place.remark}">
-                        </div>
-                        <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
-                    `;
+                    const placeInput = createPlaceInput(place);
                     placesContainer.appendChild(placeInput);
-                    attachAutocomplete(placeInput.querySelector('input[type="text"]'));
+                    // 이미 값이 채워져 있으므로 자동완성 이벤트만 다시 연결
+                    attachAutocomplete(placeInput.querySelector('input[type="text"]')); 
                 });
                 updatePlaceLabels(dayBlock);
                 attachDeleteEvents(dayBlock);
                 attachDragAndDrop(dayBlock);
             });
+            
+            // 불러오기 완료 후 드롭다운 목록 업데이트
+            updateAllFavoriteDropdowns();
         }
         
         // Event listeners for password modal
