@@ -1598,5 +1598,281 @@
             }
         }
     </script>
+    <style>
+:root {
+    --grid-hour-height: 80px; 
+    --grid-color: #f1f5f9;
+}
+
+#visual-timetable-wrapper {
+    margin-top: 2rem;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+}
+
+.controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 10px;
+}
+
+#capture-area {
+    background: white;
+    padding: 40px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    overflow-x: auto;
+    min-width: 600px;
+}
+
+.timetable-header-row {
+    display: flex;
+    margin-left: 60px; 
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.day-column-header {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+    padding: 15px 0;
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.timetable-content-row {
+    display: flex;
+    position: relative;
+}
+
+.time-axis {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.hour-label {
+    height: var(--grid-hour-height);
+    font-size: 0.8rem;
+    color: #64748b;
+    text-align: right;
+    padding-right: 15px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.day-grid-column {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+    border-right: 1px solid #f1f5f9;
+    background-image: linear-gradient(var(--grid-color) 1px, transparent 1px);
+    background-size: 100% var(--grid-hour-height); 
+}
+
+.event-block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.event-name { 
+    font-weight: 700; 
+    line-height: 1.2; 
+    word-break: keep-all; 
+    font-size: 0.85rem; 
+}
+
+/* 색상 테마 정의 */
+.type-move { background-color: #f1f5f9 !important; color: #475569 !important; border-left: 4px solid #94a3b8 !important; }
+.type-meal { background-color: #f0fdf4 !important; color: #15803d !important; border-left: 4px solid #22c55e !important; }
+.type-program { background-color: #fff9f2 !important; color: #b45309 !important; border-left: 4px solid #f59e0b !important; }
+.type-stay { background-color: #f5f3ff !important; color: #6d28d9 !important; border-left: 4px solid #8b5cf6 !important; }
+
+.hidden { display: none !important; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<div id="visual-timetable-wrapper" class="hidden">
+    <div class="controls-bar">
+        <h2 class="text-xl font-bold text-slate-800">🗓️ 제주여행 카테고리별 일정표</h2>
+        <button id="btn-save-image" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 shadow-md transition-all text-sm">
+            이미지로 저장
+        </button>
+    </div>
+
+    <div id="capture-area">
+        <div id="timetable-headers" class="timetable-header-row"></div>
+        <div class="timetable-content-row">
+            <div id="time-axis" class="time-axis"></div>
+            <div id="grid-columns" class="flex flex-1"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const HOUR_HEIGHT = 80;
+    const PIXELS_PER_MIN = HOUR_HEIGHT / 60;
+
+    const MEAL_KEYWORDS = ['남경어곰탕', '삼거리농원', '해원횟집', '복길', '식사', '중식', '석식', '점심', '저녁'];
+    const STAY_KEYWORDS = ['엠버', '호텔', '리조트', '숙소', '공항', '제주국제공항', '운진항'];
+    const PROGRAM_KEYWORDS = ['가파도', '제주맥주', '양조장', '가시버시', '생각하는정원', '환상숲', '곶자왈', '공방', '시장'];
+
+    const observer = new MutationObserver(() => {
+        const results = document.getElementById('results-container');
+        if (results && results.children.length > 0) {
+            setTimeout(generateTimetable, 500);
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    function parseTime(str) {
+        if (!str || typeof str !== 'string') return null;
+        const match = str.match(/(\d{1,2}):(\d{2})/);
+        if (!match) return null;
+        return parseInt(match[1]) * 60 + parseInt(match[2]);
+    }
+
+    function generateTimetable() {
+        const resultsContainer = document.getElementById('results-container');
+        const wrapper = document.getElementById('visual-timetable-wrapper');
+        if (!resultsContainer) return;
+
+        const dayCards = resultsContainer.querySelectorAll('.capture-card');
+        if (dayCards.length === 0) return;
+
+        let minTotalMin = 1440;
+        let maxTotalMin = 0;
+        const allDaysData = [];
+
+        dayCards.forEach((card) => {
+            const headerElem = card.querySelector('.capture-header span');
+            const title = headerElem ? headerElem.innerText : '일정';
+            const rows = card.querySelectorAll('tbody tr');
+            const rawEvents = [];
+
+            rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 3) return;
+                
+                const timeText = cells[0].innerText || "";
+                const timeParts = timeText.split('~');
+                let start = parseTime(timeParts[0]);
+                let end = parseTime(timeParts[1] || timeParts[0]);
+
+                if (start === null) return;
+
+                const name = (cells[2].innerText || "").trim();
+                const durationText = (cells[1].innerText || "").trim();
+                const durationVal = parseInt(durationText.replace(/[^0-9]/g, "")) || 0;
+                const isMove = row.classList.contains('bg-gray-50') || name.includes('→');
+
+                // 1. 10분 미만 이동은 무시
+                if (isMove && durationVal < 10) {
+                    return; 
+                }
+
+                // 2. 첫 일정이고 '공항'이 포함된 경우 1시간 전부터 시작하도록 보정
+                if (index === 0 && name.includes('공항')) {
+                    // 원래 시작 시간을 종료 시간으로 두고, 1시간 전을 시작 시간으로 설정
+                    end = start;
+                    start = start - 60;
+                }
+
+                rawEvents.push({ start, end, name, duration: durationText, isMove });
+            });
+
+            if (rawEvents.length > 0) {
+                rawEvents.forEach(e => {
+                    minTotalMin = Math.min(minTotalMin, e.start);
+                    maxTotalMin = Math.max(maxTotalMin, e.end);
+                });
+                allDaysData.push({ title, events: rawEvents });
+            }
+        });
+
+        if (allDaysData.length === 0) return;
+        wrapper.classList.remove('hidden');
+
+        const startHour = Math.floor(minTotalMin / 60);
+        const endHour = Math.ceil(maxTotalMin / 60);
+        
+        const axis = document.getElementById('time-axis');
+        const headerRow = document.getElementById('timetable-headers');
+        const gridRow = document.getElementById('grid-columns');
+        
+        axis.innerHTML = ''; headerRow.innerHTML = ''; gridRow.innerHTML = '';
+
+        for (let h = startHour; h <= endHour; h++) {
+            const label = document.createElement('div');
+            label.className = 'hour-label';
+            label.innerText = `${String(h).padStart(2, '0')}:00`;
+            axis.appendChild(label);
+        }
+
+        allDaysData.forEach(day => {
+            const hDiv = document.createElement('div');
+            hDiv.className = 'day-column-header';
+            hDiv.innerText = day.title;
+            headerRow.appendChild(hDiv);
+
+            const col = document.createElement('div');
+            col.className = 'day-grid-column';
+            col.style.height = `${(endHour - startHour + 1) * HOUR_HEIGHT}px`;
+
+            day.events.forEach(ev => {
+                const top = (ev.start - (startHour * 60)) * PIXELS_PER_MIN;
+                let height = (ev.end - ev.start) * PIXELS_PER_MIN;
+                if (height < 25) height = 25; 
+
+                const block = document.createElement('div');
+                let typeClass = 'type-program'; 
+
+                if (ev.isMove) {
+                    typeClass = 'type-move';
+                } else if (MEAL_KEYWORDS.some(kw => ev.name.includes(kw))) {
+                    typeClass = 'type-meal';
+                } else if (STAY_KEYWORDS.some(kw => ev.name.includes(kw))) {
+                    typeClass = 'type-stay';
+                }
+
+                block.className = `event-block ${typeClass}`;
+                block.style.top = `${top}px`;
+                block.style.height = `${height}px`;
+                
+                const text = ev.isMove ? `이동(${ev.duration})` : ev.name;
+                block.innerHTML = `<div class="event-name">${text}</div>`;
+                col.appendChild(block);
+            });
+            gridRow.appendChild(col);
+        });
+    }
+
+    document.getElementById('btn-save-image').addEventListener('click', function() {
+        const area = document.getElementById('capture-area');
+        html2canvas(area, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = '제주여행_상세_시간표.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    });
+})();
+</script>
 </body>
 </html>
