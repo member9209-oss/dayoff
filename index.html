@@ -167,6 +167,7 @@
                 width: 100%;
                 margin-top: 0.5rem;
             }
+            /* 모바일에서 출발 시간/비고 입력 필드가 세로로 쌓이도록 조정 */
             .start-time-remark-row {
                  flex-direction: column;
                  align-items: flex-start !important;
@@ -208,26 +209,34 @@
     </div>
 
     <div id="favorite-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-xl p-8 max-xl w-full shadow-2xl">
+        <div class="bg-white rounded-xl p-8 max-w-xl w-full shadow-2xl">
             <h3 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">즐겨찾기 장소 관리</h3>
             
             <div id="favorite-form" class="space-y-4 mb-6 p-4 border rounded-lg bg-gray-50">
                 <p class="font-semibold text-gray-700">새 즐겨찾기 추가:</p>
+                
+                <!-- 1. Custom Name Input (나만의 이름) -->
                 <div class="flex items-center gap-4">
                     <label class="text-gray-700 w-24">나만의 이름:</label>
                     <input type="text" id="fav-custom-name-input" class="flex-1 p-2 border border-gray-300 rounded-lg" placeholder="예: 해변 근처 카페">
                 </div>
+                
+                <!-- 2. Specific Place Input (구체적 장소 - 자동완성) -->
                 <div class="flex items-center gap-4 input-container">
                     <label class="text-gray-700 w-24">구체적 장소:</label>
                     <input type="text" id="fav-place-name-input" class="flex-1 p-2 border border-gray-300 rounded-lg" placeholder="장소명 입력 (자동완성)">
                     <ul class="autocomplete-list"></ul>
                 </div>
+                
                 <button id="add-favorite-btn" class="w-full bg-green-500 text-white font-bold py-2 rounded-lg hover:bg-green-600 transition-colors">
                     <i class="fas fa-bookmark mr-2"></i>즐겨찾기 추가
                 </button>
             </div>
-            <div id="favorite-list-container" class="space-y-2 max-h-64 overflow-y-auto"></div>
+            
+            <div id="favorite-list-container" class="space-y-2 max-h-64 overflow-y-auto">
+                </div>
             <p id="no-favorites" class="text-gray-500 text-center mt-4 hidden">등록된 즐겨찾기가 없습니다.</p>
+            
             <div class="mt-6 flex justify-end">
                  <button id="close-favorite-modal-btn" class="bg-gray-400 text-white font-bold py-2 px-4 rounded-full hover:bg-gray-500 transition-colors">닫기</button>
             </div>
@@ -240,6 +249,7 @@
                 <h1 class="text-4xl font-bold text-gray-800">동선계획</h1>
                 <p class="text-lg text-gray-500 mt-2">여행 일정을 효율적으로 계획해 보세요.</p>
             </header>
+
             <div id="app" class="space-y-8">
                 <div class="flex justify-center gap-4 mb-8 flex-wrap">
                     <button id="manage-favorites-btn" class="bg-pink-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-pink-600 transition-colors">
@@ -252,7 +262,10 @@
                         <i class="fas fa-file-import mr-2"></i>불러오기 (.json)
                     </button>
                 </div>
-                <div id="day-container" class="space-y-8"></div>
+                
+                <div id="day-container" class="space-y-8">
+                    </div>
+
                 <div class="flex justify-center gap-4 mt-8">
                     <button id="add-day-btn" class="bg-indigo-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition-colors">
                         <i class="fas fa-plus mr-2"></i>일정 추가
@@ -264,18 +277,23 @@
                         <i class="fas fa-route mr-2"></i>동선 계산
                     </button>
                 </div>
+
                 <div id="results" class="mt-8 hidden">
                     <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">여행 동선 결과</h2>
-                    <div id="results-container" class="space-y-6"></div>
+                    <div id="results-container" class="space-y-6">
+                        </div>
                 </div>
             </div>
+
             <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-40">
                 <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
                     <p id="notification-message" class="text-gray-800 text-lg"></p>
                     <div id="modal-button-container" class="mt-6 flex justify-center gap-2"></div>
                 </div>
             </div>
+            
             <input type="file" id="file-load-input" accept=".json" class="hidden">
+
             <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center hidden z-40">
                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
                 <p class="text-white text-lg">동선 계산 중...</p>
@@ -285,59 +303,67 @@
 
     <script>
         const KAKAO_API_KEY = '569bb7ab8cbe696339ba922fa5dc101a';
-        const CORRECT_PASSWORD = '2222'; 
+        const CORRECT_PASSWORD = '2222'; // 비밀번호 설정
         
         const passwordModal = document.getElementById('password-modal');
         const passwordInput = document.getElementById('password-input');
         const passwordSubmitBtn = document.getElementById('password-submit-btn');
         const passwordError = document.getElementById('password-error');
         const mainContent = document.getElementById('main-content');
+        
         const dayContainer = document.getElementById('day-container');
         const addDayBtn = document.getElementById('add-day-btn');
         const removeDayBtn = document.getElementById('remove-day-btn');
         const calculateBtn = document.getElementById('calculate-btn');
         const saveBtn = document.getElementById('save-btn');
         const loadBtn = document.getElementById('load-btn');
-        const manageFavoritesBtn = document.getElementById('manage-favorites-btn');
+        const manageFavoritesBtn = document.getElementById('manage-favorites-btn'); // 즐겨찾기 관리 버튼
         const resultsDiv = document.getElementById('results');
         const resultsContainer = document.getElementById('results-container');
         const notificationModal = document.getElementById('notification-modal');
         const notificationMessage = document.getElementById('notification-message');
         const modalButtonContainer = document.getElementById('modal-button-container');
         const loadingOverlay = document.getElementById('loading-overlay');
+        
         const filenameModal = document.getElementById('filename-modal');
         const filenameInput = document.getElementById('filename-input');
         const filenameSubmitBtn = document.getElementById('filename-submit-btn');
         const filenameCancelBtn = document.getElementById('filename-cancel-btn');
         const filenameError = document.getElementById('filename-error');
+
+        // Favorite Modal elements (UPDATED)
         const favoriteModal = document.getElementById('favorite-modal');
         const closeFavoriteModalBtn = document.getElementById('close-favorite-modal-btn');
-        const favCustomNameInput = document.getElementById('fav-custom-name-input');
-        const favPlaceNameInput = document.getElementById('fav-place-name-input');
+        const favCustomNameInput = document.getElementById('fav-custom-name-input'); // '나만의 이름'
+        const favPlaceNameInput = document.getElementById('fav-place-name-input'); // '구체적 장소' (자동완성)
         const addFavoriteBtn = document.getElementById('add-favorite-btn');
         const favoriteListContainer = document.getElementById('favorite-list-container');
         const noFavoritesText = document.getElementById('no-favorites');
+
         const fileLoadInput = document.getElementById('file-load-input');
 
         let dayCount = 0;
-        let favorites = []; 
+        let favorites = []; // 즐겨찾기 데이터를 저장할 배열
         
+        // 즐겨찾기 폼 입력 필드에 데이터-속성을 추가하여 좌표를 임시 저장
+        // 좌표는 '구체적 장소' 입력 필드에 저장됩니다.
         favPlaceNameInput.dataset.lat = '';
         favPlaceNameInput.dataset.lng = '';
-        favPlaceNameInput.dataset.category = ''; // 카테고리 코드 저장용
         
         let lastDayEndPoint = {
             name: '제주공항 주차장출입구',
-            coords: { lat: '33.507421', lng: '126.494208' },
-            category: 'AT4'
+            coords: { lat: '33.507421', lng: '126.494208' }
         };
         const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
+        // --- Password Check and Main Content Initialization ---
         async function checkPasswordAndInitialize() {
             if (passwordInput.value === CORRECT_PASSWORD) {
                 passwordModal.classList.add('hidden');
                 mainContent.classList.remove('hidden');
+                // 즐겨찾기 데이터 로드
                 favorites = loadFavorites();
+                
                 if (dayCount === 0) {
                     addDay(); 
                 }
@@ -346,6 +372,7 @@
             }
         }
         
+        // --- Favorite Management Functions (New Logic) ---
         function loadFavorites() {
             try {
                 const stored = localStorage.getItem('travel_schedule_favorites');
@@ -361,7 +388,7 @@
                 localStorage.setItem('travel_schedule_favorites', JSON.stringify(favorites));
             } catch (e) {
                 console.error("Failed to save favorites to localStorage:", e);
-                showNotification("즐겨찾기 저장에 실패했습니다.");
+                showNotification("즐겨찾기 저장에 실패했습니다. 브라우저 저장 공간을 확인해주세요.");
             }
         }
 
@@ -376,6 +403,7 @@
             favorites.forEach((fav, index) => {
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between p-3 border-b hover:bg-gray-50';
+                
                 item.innerHTML = `
                     <div>
                         <p class="font-semibold text-gray-800">${fav.customName}</p>
@@ -388,12 +416,14 @@
                 favoriteListContainer.appendChild(item);
             });
             
+            // Attach delete events
             favoriteListContainer.querySelectorAll('.remove-fav-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const index = parseInt(e.currentTarget.dataset.index);
                     favorites.splice(index, 1);
                     saveFavorites();
                     renderFavoriteList();
+                    // 모든 드롭다운도 업데이트해야 함
                     updateAllFavoriteDropdowns(); 
                 });
             });
@@ -406,26 +436,28 @@
 
         closeFavoriteModalBtn.addEventListener('click', () => {
             favoriteModal.classList.add('hidden');
+            // 폼 초기화
             favCustomNameInput.value = '';
             favPlaceNameInput.value = '';
             favPlaceNameInput.dataset.lat = '';
             favPlaceNameInput.dataset.lng = '';
-            favPlaceNameInput.dataset.category = '';
         });
 
+        // Add Favorite Button Handler (UPDATED)
         addFavoriteBtn.addEventListener('click', () => {
             const customName = favCustomNameInput.value.trim();
             const placeName = favPlaceNameInput.value.trim();
             const lat = favPlaceNameInput.dataset.lat;
             const lng = favPlaceNameInput.dataset.lng;
-            const category = favPlaceNameInput.dataset.category;
 
             if (!customName || !placeName) {
                 showNotification('나만의 이름과 구체적 장소명은 필수 입력 항목입니다.');
                 return;
             }
 
+            // 비주소성 장소명 (중식/석식)도 구체적 장소명으로 저장하려면 좌표 체크 로직을 제외해야 함
             const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName.toLowerCase());
+            
             if (!isNonAddress && (lat === '' || lng === '')) {
                  showNotification('구체적 장소명을 입력 후 자동완성 리스트에서 정확한 장소를 선택해야 합니다.');
                  return;
@@ -433,39 +465,73 @@
 
             favorites.push({
                 id: Date.now(),
-                customName: customName,
-                place: {
+                customName: customName, // 요청 #2 반영
+                place: { // 요청 #2 반영
                     name: placeName,
-                    coords: { lat: lat, lng: lng },
-                    category: category // 카테고리 정보 저장
+                    coords: { lat: lat, lng: lng }
                 }
+                // 체류시간, 비고는 저장하지 않음 (요청 #1 반영)
             });
 
             saveFavorites();
             renderFavoriteList();
             updateAllFavoriteDropdowns(); 
             
+            // 폼 초기화
             favCustomNameInput.value = '';
             favPlaceNameInput.value = '';
             favPlaceNameInput.dataset.lat = '';
             favPlaceNameInput.dataset.lng = '';
-            favPlaceNameInput.dataset.category = '';
         });
         
+        // 즐겨찾기 폼에 자동 완성 연결 (이제 '구체적 장소'에만 연결)
         attachAutocomplete(favPlaceNameInput);
 
-        function showLoading() { loadingOverlay.classList.remove('hidden'); }
-        function hideLoading() { loadingOverlay.classList.add('hidden'); }
-        function clearModalButtons() { modalButtonContainer.innerHTML = ''; }
+        // --- Helper functions ---
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        function clearModalButtons() {
+            modalButtonContainer.innerHTML = '';
+        }
 
         function showNotification(message) {
             clearModalButtons();
             notificationMessage.textContent = message;
+            
             const closeBtn = document.createElement('button');
             closeBtn.textContent = '확인';
             closeBtn.className = 'bg-indigo-500 text-white py-2 px-4 rounded-full hover:bg-indigo-600 transition-colors';
             closeBtn.onclick = () => notificationModal.classList.add('hidden');
+            
             modalButtonContainer.appendChild(closeBtn);
+            notificationModal.classList.remove('hidden');
+        }
+
+        function showConfirmation(message, onConfirm) {
+            clearModalButtons();
+            notificationMessage.textContent = message;
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = '삭제';
+            confirmBtn.className = 'bg-red-500 text-white py-2 px-4 rounded-full hover:bg-red-700 transition-colors';
+            confirmBtn.onclick = () => {
+                notificationModal.classList.add('hidden');
+                onConfirm();
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = '취소';
+            cancelBtn.className = 'bg-gray-400 text-white py-2 px-4 rounded-full hover:bg-gray-500 transition-colors';
+            cancelBtn.onclick = () => notificationModal.classList.add('hidden');
+
+            modalButtonContainer.appendChild(confirmBtn);
+            modalButtonContainer.appendChild(cancelBtn);
             notificationModal.classList.remove('hidden');
         }
 
@@ -487,13 +553,11 @@
             let defaultStartName = '';
             let defaultStartLat = '';
             let defaultStartLng = '';
-            let defaultCategory = '';
 
             if (dayCount === 1) {
                 defaultStartName = lastDayEndPoint.name;
                 defaultStartLat = lastDayEndPoint.coords.lat;
                 defaultStartLng = lastDayEndPoint.coords.lng;
-                defaultCategory = lastDayEndPoint.category || '';
             } else {
                 const lastDayBlock = document.getElementById(`day-${dayCount - 1}`);
                 const lastDateInput = lastDayBlock.querySelector('.date-input');
@@ -504,9 +568,9 @@
                 }
 
                 const lastDayPlaces = Array.from(lastDayBlock.querySelectorAll('.place-input')).filter(el => {
-                    const pInput = el.querySelector('input[placeholder="장소명 입력"]');
-                    const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(pInput.value.toLowerCase());
-                    return !isNonAddress && pInput.dataset.lat;
+                    const placeName = el.querySelector('input[placeholder="장소명 입력"]').value;
+                    const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName.toLowerCase());
+                    return !isNonAddress && el.querySelector('input[placeholder="장소명 입력"]').dataset.lat;
                 });
 
                 if (lastDayPlaces.length > 0) {
@@ -514,12 +578,10 @@
                     defaultStartName = lastPlaceInput.value;
                     defaultStartLat = lastPlaceInput.dataset.lat;
                     defaultStartLng = lastPlaceInput.dataset.lng;
-                    defaultCategory = lastPlaceInput.dataset.category || '';
                 } else {
                      defaultStartName = lastDayEndPoint.name;
                      defaultStartLat = lastDayEndPoint.coords.lat;
                      defaultStartLng = lastDayEndPoint.coords.lng;
-                     defaultCategory = lastDayEndPoint.category || '';
                 }
             }
 
@@ -527,12 +589,16 @@
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-2xl font-bold text-indigo-700 w-28 no-select">${dayCount}일차</h3>
                     <input type="date" class="date-input p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" value="${defaultDate}">
+                    
                     <div class="flex gap-2">
                         <div class="favorite-dropdown">
                             <button class="toggle-fav-btn bg-yellow-500 text-white font-bold py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors">
                                 <i class="fas fa-star mr-2"></i>즐겨찾기
                             </button>
-                            <div class="favorite-content hidden"><ul class="favorites-list-dropdown"></ul></div>
+                            <div class="favorite-content hidden">
+                                <ul class="favorites-list-dropdown">
+                                    </ul>
+                            </div>
                         </div>
                         <button class="add-place-btn bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors">
                             <i class="fas fa-plus mr-2"></i>장소 추가
@@ -542,17 +608,18 @@
                 <div class="space-y-4">
                     <div class="flex items-center gap-4 input-container">
                         <label for="start-point-${dayCount}" class="text-gray-700 w-28">출발 위치:</label>
-                        <input type="text" id="start-point-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
-                            placeholder="예: 제주국제공항" value="${defaultStartName}" data-lat="${defaultStartLat}" data-lng="${defaultStartLng}" data-category="${defaultCategory}">
+                        <input type="text" id="start-point-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="예: 제주국제공항" value="${defaultStartName}" data-lat="${defaultStartLat}" data-lng="${defaultStartLng}">
                         <ul class="autocomplete-list"></ul>
                     </div>
                     <div class="flex items-start sm:items-center flex-col sm:flex-row gap-4 start-time-remark-row">
                         <label for="start-time-${dayCount}" class="text-gray-700 w-28 shrink-0">출발 시간:</label>
-                        <select id="start-time-${dayCount}" class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 shrink-0">${timeOptions}</select>
+                        <select id="start-time-${dayCount}" class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 shrink-0">
+                           ${timeOptions}
+                        </select>
                         <label for="start-remark-${dayCount}" class="text-gray-700 w-16 shrink-0 sm:ml-4">비고:</label>
-                        <input type="text" id="start-remark-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg w-full sm:w-auto" placeholder="출발 비고">
+                        <input type="text" id="start-remark-${dayCount}" class="flex-1 p-2 border border-gray-300 rounded-lg w-full sm:w-auto" placeholder="출발 비고 (예: 아침 식사, 숙소 체크아웃)">
                     </div>
-                </div>
+                    </div>
                 <div class="space-y-4 drag-container" id="places-container-${dayCount}">
                     <div class="flex items-center gap-4 place-input draggable-place place-row" draggable="true">
                         <label class="text-gray-700 place-label no-select">장소 1:</label>
@@ -560,8 +627,12 @@
                             <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="장소명 입력">
                             <ul class="autocomplete-list"></ul>
                         </div>
-                        <div class="w-24 stay-duration-input"><input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)"></div>
-                        <div class="flex-1 remark-input"><input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고"></div>
+                        <div class="w-24 stay-duration-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간(분)">
+                        </div>
+                        <div class="flex-1 remark-input">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고 (예: 점심 식사)">
+                        </div>
                         <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
                     </div>
                 </div>
@@ -577,27 +648,40 @@
                 updatePlaceLabels(dayBlock);
             });
 
+            // 즐겨찾기 드롭다운 이벤트 연결
             attachFavoriteDropdown(dayBlock);
+
             attachAutocomplete(dayBlock.querySelector(`input[id^="start-point"]`));
-            attachAutocomplete(dayBlock.querySelector(`.place-input input[placeholder="장소명 입력"]`));
+            const initialPlaceInput = dayBlock.querySelector(`.place-input input[placeholder="장소명 입력"]`);
+            attachAutocomplete(initialPlaceInput);
             attachDeleteEvents(dayBlock);
             attachDragAndDrop(dayBlock);
         }
 
+        // 즐겨찾기 드롭다운 생성 및 이벤트 연결
         function attachFavoriteDropdown(dayBlock) {
             const dropdown = dayBlock.querySelector('.favorite-dropdown');
             const toggleBtn = dayBlock.querySelector('.toggle-fav-btn');
             const content = dayBlock.querySelector('.favorite-content');
             const list = dayBlock.querySelector('.favorites-list-dropdown');
             
+            // 드롭다운 토글 기능
             toggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 content.classList.toggle('hidden');
-                if (!content.classList.contains('hidden')) renderFavoriteDropdownList(list);
+                if (!content.classList.contains('hidden')) {
+                    renderFavoriteDropdownList(list);
+                }
             });
 
-            document.addEventListener('click', (e) => { if (!dropdown.contains(e.target)) content.classList.add('hidden'); });
+            // 외부 클릭 시 닫기
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target)) {
+                    content.classList.add('hidden');
+                }
+            });
             
+            // 목록 클릭 시 장소 추가
             list.addEventListener('click', (e) => {
                 const li = e.target.closest('li');
                 if (li) {
@@ -605,70 +689,138 @@
                     const fav = favorites.find(f => f.id === favId);
                     if (fav) {
                         const placesContainer = dayBlock.querySelector(`.drag-container`);
-                        const placeInput = createPlaceInput(fav);
+                        const placeInput = createPlaceInput(fav); // 새 즐겨찾기 구조를 넘겨줌
                         placesContainer.appendChild(placeInput);
                         attachAutocomplete(placeInput.querySelector('input[type="text"]'));
                         updatePlaceLabels(dayBlock);
-                        content.classList.add('hidden');
+                        content.classList.add('hidden'); // 추가 후 드롭다운 닫기
                     }
                 }
             });
+            
+            // 최초 로드 시 목록 렌더링
             renderFavoriteDropdownList(list);
         }
 
+        // 즐겨찾기 드롭다운 목록 렌더링 (UPDATED)
         function renderFavoriteDropdownList(listElement) {
             listElement.innerHTML = '';
             if (favorites.length === 0) {
                 listElement.innerHTML = '<li class="text-gray-500 text-center py-3">등록된 즐겨찾기 없음</li>';
                 return;
             }
+
             favorites.forEach(fav => {
                 const li = document.createElement('li');
                 li.dataset.favId = fav.id;
-                li.innerHTML = `<div class="font-semibold">${fav.customName}</div><div class="text-xs text-gray-500 mt-0.5">${fav.place.name}</div>`;
+                // fav.customName과 fav.place.name을 표시
+                li.innerHTML = `
+                    <div class="font-semibold">${fav.customName}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">${fav.place.name}</div>
+                `;
                 listElement.appendChild(li);
             });
         }
         
-        function updateAllFavoriteDropdowns() { document.querySelectorAll('.favorites-list-dropdown').forEach(renderFavoriteDropdownList); }
+        // 모든 일차의 즐겨찾기 드롭다운 업데이트
+        function updateAllFavoriteDropdowns() {
+            document.querySelectorAll('.favorites-list-dropdown').forEach(list => {
+                renderFavoriteDropdownList(list);
+            });
+        }
 
+        // 장소 입력 필드 생성 (UPDATED Logic for Favorite Application)
         function createPlaceInput(fav = {}) {
-            let pName = '', pLat = '', pLng = '', pCategory = '', pDur = '', pRem = '';
+            let placeDisplayName = fav.name || '';
+            let placeLat = fav.coords?.lat || '';
+            let placeLng = fav.coords?.lng || '';
+            let placeStayDuration = fav.stayDuration || '';
+            let placeRemark = fav.remark || '';
+            
+            // 파일 불러오기 시 (구조가 fav.name, fav.coords)가 아닌 
+            // 즐겨찾기 드롭다운 클릭 시 (구조가 fav.customName, fav.place.name 등)의 경우
             if (fav.customName) { 
-                pName = fav.place.name; pLat = fav.place.coords.lat; pLng = fav.place.coords.lng; pCategory = fav.place.category || '';
+                // 이는 즐겨찾기 드롭다운에서 선택된 항목
+                placeDisplayName = fav.place.name;
+                placeLat = fav.place.coords.lat;
+                placeLng = fav.place.coords.lng;
+                placeStayDuration = ''; // 요청 #1: 체류 시간은 비워둠
+                placeRemark = '';       // 요청 #1: 비고는 비워둠
             } else if (fav.name) {
-                pName = fav.name; pLat = fav.coords?.lat || ''; pLng = fav.coords?.lng || ''; pCategory = fav.category || ''; pDur = fav.stayDuration || ''; pRem = fav.remark || '';
+                // 이는 파일에서 기존 일정의 장소를 불러올 때
+                placeDisplayName = fav.name;
+                placeLat = fav.coords?.lat || '';
+                placeLng = fav.coords?.lng || '';
+                placeStayDuration = fav.stayDuration || '';
+                placeRemark = fav.remark || '';
             }
 
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-4 place-input draggable-place place-row';
-            div.setAttribute('draggable', 'true');
-            div.innerHTML = `
-                <label class="text-gray-700 place-label no-select">장소:</label>
-                <div class="flex-1 input-container place-name-input">
-                    <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
-                        placeholder="장소명 입력" value="${pName}" data-lat="${pLat}" data-lng="${pLng}" data-category="${pCategory}">
-                    <ul class="autocomplete-list"></ul>
-                </div>
-                <div class="w-24 stay-duration-input"><input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="체류 시간" value="${pDur}"></div>
-                <div class="flex-1 remark-input"><input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" placeholder="비고" value="${pRem}"></div>
-                <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
-            `;
-            return div;
+             const placeInput = document.createElement('div');
+                placeInput.className = 'flex items-center gap-4 place-input draggable-place place-row';
+                placeInput.setAttribute('draggable', 'true');
+                placeInput.innerHTML = `
+                    <label class="text-gray-700 place-label no-select">장소:</label>
+                    <div class="flex-1 input-container place-name-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
+                            placeholder="장소명 입력" 
+                            value="${placeDisplayName}" 
+                            data-lat="${placeLat}" 
+                            data-lng="${placeLng}">
+                        <ul class="autocomplete-list"></ul>
+                    </div>
+                    <div class="w-24 stay-duration-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
+                            placeholder="체류 시간(분)" 
+                            value="${placeStayDuration}">
+                    </div>
+                    <div class="flex-1 remark-input">
+                        <input type="text" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" 
+                            placeholder="비고 (예: 점심 식사)" 
+                            value="${placeRemark}">
+                    </div>
+                    <i class="fas fa-times-circle text-red-500 cursor-pointer delete-place-btn no-select"></i>
+                `;
+            return placeInput;
         }
+
 
         function removeDay() {
             if (dayCount > 1) {
-                dayContainer.removeChild(document.getElementById(`day-${dayCount}`));
+                const lastDayBlock = document.getElementById(`day-${dayCount}`);
+                dayContainer.removeChild(lastDayBlock);
                 dayCount--;
+                const lastDayBlockPlaces = document.getElementById(`day-${dayCount}`);
+                
+                if (lastDayBlockPlaces) {
+                    const placeInputs = lastDayBlockPlaces.querySelectorAll('.place-input');
+                    const lastPlaceInput = placeInputs.length > 0 
+                        ? placeInputs[placeInputs.length - 1].querySelector('input[placeholder="장소명 입력"]')
+                        : null;
+                    
+                    if (lastPlaceInput && lastPlaceInput.dataset.lat) {
+                        lastDayEndPoint = {
+                            name: lastPlaceInput.value,
+                            coords: { lat: lastPlaceInput.dataset.lat, lng: lastPlaceInput.dataset.lng }
+                        };
+                    } else {
+                        lastDayEndPoint = {
+                             name: '제주공항 주차장출입구',
+                             coords: { lat: '33.507421', lng: '126.494208' }
+                        };
+                    }
+                }
+                
             } else {
-                showNotification('마지막 일정은 삭제할 수 없습니다.');
+                showNotification('마지막 일정은 삭제할 수 없습니다. 일정을 초기화하려면 새로고침하세요.');
             }
         }
         
         function updatePlaceLabels(dayBlock) {
-            dayBlock.querySelectorAll('.place-input').forEach((input, index) => {
+            const placesContainer = dayBlock.querySelector(`.drag-container`);
+            const placeInputs = placesContainer.querySelectorAll('.place-input');
+            placeInputs.forEach((input, index) => {
                 const label = input.querySelector('.place-label');
+                // label이 장소 입력 필드와 항상 동등한 위치에 있도록
                 if(label) label.textContent = `장소 ${index + 1}:`;
             });
         }
@@ -676,20 +828,30 @@
         function attachDeleteEvents(dayBlock) {
             dayBlock.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-place-btn')) {
-                    const row = e.target.closest('.place-input');
-                    if (row) { row.remove(); updatePlaceLabels(dayBlock); }
+                    const placeInput = e.target.closest('.place-input');
+                    if (placeInput) {
+                        placeInput.remove();
+                        updatePlaceLabels(dayBlock);
+                    }
                 }
             });
         }
         
         function attachDragAndDrop(dayBlock) {
-            const container = dayBlock.querySelector(`.drag-container`);
+            const placesContainer = dayBlock.querySelector(`.drag-container`);
             let dragSrcEl = null;
-            container.addEventListener('dragstart', (e) => {
+
+            placesContainer.addEventListener('dragstart', (e) => {
                 const target = e.target.closest('.draggable-place');
-                if (target) { dragSrcEl = target; e.dataTransfer.effectAllowed = 'move'; target.classList.add('dragging'); }
+                if (target) {
+                    dragSrcEl = target;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', dragSrcEl.outerHTML);
+                    dragSrcEl.classList.add('dragging');
+                }
             });
-            container.addEventListener('dragover', (e) => {
+
+            placesContainer.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 const target = e.target.closest('.draggable-place');
                 if (target) {
@@ -699,48 +861,90 @@
                     target.style.borderBottom = isAfter ? '2px solid #6366f1' : '';
                 }
             });
-            container.addEventListener('dragleave', (e) => {
+
+            placesContainer.addEventListener('dragleave', (e) => {
                 const target = e.target.closest('.draggable-place');
-                if (target) { target.style.borderTop = ''; target.style.borderBottom = ''; }
+                if (target) {
+                    target.style.borderTop = '';
+                    target.style.borderBottom = '';
+                }
             });
-            container.addEventListener('drop', (e) => {
+
+            placesContainer.addEventListener('drop', (e) => {
                 e.stopPropagation();
                 const dropTarget = e.target.closest('.draggable-place');
                 if (dropTarget && dragSrcEl && dragSrcEl !== dropTarget) {
                     const rect = dropTarget.getBoundingClientRect();
-                    if (e.clientY > rect.top + rect.height / 2) dropTarget.parentNode.insertBefore(dragSrcEl, dropTarget.nextSibling);
-                    else dropTarget.parentNode.insertBefore(dragSrcEl, dropTarget);
+                    const isAfter = e.clientY > rect.top + rect.height / 2;
+                    
+                    if (isAfter) {
+                        dropTarget.parentNode.insertBefore(dragSrcEl, dropTarget.nextSibling);
+                    } else {
+                        dropTarget.parentNode.insertBefore(dragSrcEl, dropTarget);
+                    }
                     updatePlaceLabels(dayBlock);
                 }
-                document.querySelectorAll('.draggable-place').forEach(el => { el.style.borderTop = el.style.borderBottom = ''; el.classList.remove('dragging'); });
+                document.querySelectorAll('.draggable-place').forEach(el => {
+                    el.style.borderTop = '';
+                    el.style.borderBottom = '';
+                    el.classList.remove('dragging');
+                });
             });
-            container.addEventListener('dragend', () => { document.querySelectorAll('.draggable-place').forEach(el => el.classList.remove('dragging')); });
+
+            placesContainer.addEventListener('dragend', () => {
+                 document.querySelectorAll('.draggable-place').forEach(el => {
+                    el.classList.remove('dragging');
+                });
+            });
         }
 
         function attachAutocomplete(inputElement) {
             const listElement = inputElement.closest('.input-container').querySelector('.autocomplete-list');
-            let debounceTimeout, lastQuery = '';
+            let debounceTimeout;
+            let lastQuery = '';
+
             inputElement.addEventListener('input', (e) => {
                 clearTimeout(debounceTimeout);
                 const query = e.target.value;
                 if (query.length < 2) {
-                    listElement.innerHTML = ''; listElement.classList.remove('visible');
-                    delete inputElement.dataset.lat; delete inputElement.dataset.lng; delete inputElement.dataset.category;
+                    listElement.innerHTML = '';
+                    listElement.classList.remove('visible');
+                    // 장소명, 좌표 초기화
+                    delete inputElement.dataset.lat;
+                    delete inputElement.dataset.lng;
                     return;
                 }
+
                 if (query === lastQuery) return;
                 lastQuery = query;
-                debounceTimeout = setTimeout(() => searchKakaoPlaces(query, listElement), 300);
+
+                debounceTimeout = setTimeout(() => {
+                    searchKakaoPlaces(query, listElement);
+                }, 300);
             });
-            inputElement.addEventListener('focus', () => { if (listElement.children.length > 0) listElement.classList.add('visible'); });
-            inputElement.addEventListener('blur', () => { setTimeout(() => { if (!listElement.contains(document.activeElement)) listElement.classList.remove('visible'); }, 100); });
+
+            inputElement.addEventListener('focus', () => {
+                if (listElement.children.length > 0) {
+                    listElement.classList.add('visible');
+                }
+            });
+            
+            inputElement.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (!listElement.contains(document.activeElement)) {
+                        listElement.classList.remove('visible');
+                    }
+                }, 100);
+            });
+
             listElement.addEventListener('mousedown', (e) => {
                 const li = e.target.closest('li');
                 if (li) {
+                    const inputElement = li.closest('.input-container').querySelector('input');
+                    // 장소명 입력 후 좌표와 장소명 속성 저장
                     inputElement.value = li.dataset.name;
                     inputElement.dataset.lat = li.dataset.lat;
                     inputElement.dataset.lng = li.dataset.lng;
-                    inputElement.dataset.category = li.dataset.category; // 카테고리 코드 세팅
                     listElement.classList.remove('visible');
                 }
             });
@@ -749,21 +953,34 @@
         async function searchKakaoPlaces(query, listElement) {
             const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query)}`;
             try {
-                const response = await fetch(url, { headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` } });
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` }
+                });
                 const data = await response.json();
+                
                 listElement.innerHTML = '';
                 if (data.documents && data.documents.length > 0) {
                     data.documents.forEach(place => {
                         const li = document.createElement('li');
                         li.className = 'py-2 px-4 cursor-pointer';
-                        li.dataset.lat = place.y; li.dataset.lng = place.x; li.dataset.name = place.place_name;
-                        li.dataset.category = place.category_group_code; // 코드 저장
-                        li.innerHTML = `<div class="font-semibold">${place.place_name}</div><div class="text-xs text-gray-500 mt-0.5">${place.address_name}</div>`;
+                        li.dataset.lat = place.y;
+                        li.dataset.lng = place.x;
+                        li.dataset.name = place.place_name;
+                        li.innerHTML = `
+                            <div class="font-semibold">${place.place_name}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">${place.address_name}</div>
+                        `;
                         listElement.appendChild(li);
                     });
                     listElement.classList.add('visible');
-                } else { listElement.classList.remove('visible'); }
-            } catch (error) { listElement.classList.remove('visible'); }
+                } else {
+                    listElement.classList.remove('visible');
+                }
+            } catch (error) {
+                console.error('카카오 API 검색 오류:', error);
+                listElement.classList.remove('visible');
+            }
         }
         
         addDayBtn.addEventListener('click', addDay);
@@ -773,334 +990,889 @@
             showLoading();
             const allSchedules = [];
             for (let i = 1; i <= dayCount; i++) {
+                const daySchedule = { places: [] };
                 const dayBlock = document.getElementById(`day-${i}`);
-                const sPoint = dayBlock.querySelector(`input[id^="start-point"]`);
-                if (!sPoint.dataset.lat) { hideLoading(); showNotification(`${i}일차 출발 위치를 정확히 선택해주세요.`); return; }
-                const daySchedule = { 
-                    date: dayBlock.querySelector('.date-input').value ? new Date(dayBlock.querySelector('.date-input').value) : null,
-                    startTime: dayBlock.querySelector(`#start-time-${i}`).value,
-                    startPoint: { 
-                        name: sPoint.value, 
-                        coords: { lat: sPoint.dataset.lat, lng: sPoint.dataset.lng }, 
-                        category: sPoint.dataset.category,
-                        remark: dayBlock.querySelector(`input[id^="start-remark"]`).value 
-                    },
-                    places: []
+                const dateInput = dayBlock.querySelector('.date-input');
+                const startTimeInput = dayBlock.querySelector(`#start-time-${i}`); 
+                const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`);
+                
+                if (!startPointInput.value) {
+                    hideLoading();
+                    showNotification(`${i}일차 출발 위치를 입력해주세요.`);
+                    return;
+                }
+                
+                if (!startPointInput.dataset.lat || !startPointInput.dataset.lng) {
+                    hideLoading();
+                    showNotification(`"${startPointInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
+                    return;
+                }
+                
+                const dateString = dateInput.value;
+                daySchedule.date = dateString ? new Date(dateString) : null;
+
+                daySchedule.startTime = startTimeInput.value;
+                daySchedule.startPoint = {
+                    name: startPointInput.value,
+                    coords: { lat: startPointInput.dataset.lat, lng: startPointInput.dataset.lng },
+                    remark: startRemarkInput.value
                 };
-                dayBlock.querySelectorAll(`.place-input`).forEach(pDiv => {
-                    const pInp = pDiv.querySelector('input[placeholder="장소명 입력"]');
-                    if (pInp.value) {
+
+                const placesInputs = dayBlock.querySelectorAll(`.place-input`);
+                for (let j = 0; j < placesInputs.length; j++) {
+                    const placeInputDiv = placesInputs[j];
+                    const placeNameInput = placeInputDiv.querySelector('input[placeholder="장소명 입력"]');
+                    const stayDurationInput = placeInputDiv.querySelector('input[placeholder="체류 시간(분)"]');
+                    const remarkInput = placeInputDiv.querySelector('input[placeholder^="비고"]');
+                    
+                    if (placeNameInput.value) {
+                        const placeName = placeNameInput.value.trim().toLowerCase();
+                        const isNonAddress = ['중식', '석식', '점심', '저녁'].includes(placeName);
+                        
+                        if (!isNonAddress && (!placeNameInput.dataset.lat || !placeNameInput.dataset.lng)) {
+                            hideLoading();
+                             showNotification(`"${placeNameInput.value}"의 주소를 선택해주세요. 리스트에서 정확한 장소를 클릭해야 합니다.`);
+                             return;
+                        }
+
+                        if (!stayDurationInput.value.trim()) {
+                            hideLoading();
+                            showNotification(`"${placeNameInput.value}"의 체류 시간을 입력해주세요.`);
+                            return;
+                        }
+
                         daySchedule.places.push({
-                            name: pInp.value,
-                            coords: pInp.dataset.lat ? { lat: pInp.dataset.lat, lng: pInp.dataset.lng } : null,
-                            category: pInp.dataset.category || '',
-                            stayDuration: pDiv.querySelector('input[placeholder^="체류 시간"]').value,
-                            remark: pDiv.querySelector('input[placeholder^="비고"]').value
+                            name: placeNameInput.value,
+                            coords: isNonAddress ? null : { lat: placeNameInput.dataset.lat, lng: placeNameInput.dataset.lng },
+                            stayDuration: stayDurationInput.value,
+                            remark: remarkInput ? remarkInput.value : ''
                         });
                     }
-                });
-                if (daySchedule.places.length > 0) allSchedules.push(daySchedule);
+                }
+                
+                if (daySchedule.places.length > 0) {
+                    allSchedules.push(daySchedule);
+                }
             }
-            if (allSchedules.length === 0) { hideLoading(); showNotification('일정을 입력해주세요.'); return; }
-            resultsContainer.innerHTML = ''; resultsDiv.classList.remove('hidden');
-            for (let i = 0; i < allSchedules.length; i++) await processSchedule(allSchedules[i], i + 1);
+
+            if (allSchedules.length === 0) {
+                hideLoading();
+                showNotification('일정을 추가하고 장소를 입력해주세요.');
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+            resultsDiv.classList.remove('hidden');
+            
+            for (let i = 0; i < allSchedules.length; i++) {
+                await processSchedule(allSchedules[i], i + 1);
+            }
             hideLoading();
         });
 
         async function processSchedule(daySchedule, dayIndex) {
             const { startTime, startPoint, places, date } = daySchedule;
-            let travelPlan = []; let currentPoint = startPoint;
-            let currentTime = new Date(date || new Date());
-            const [h, m] = startTime.split(':').map(Number);
-            currentTime.setHours(h, m, 0, 0);
-            let totalTravel = 0;
+            
+            let travelPlan = [];
+            let currentPoint = startPoint;
+            let currentTime;
+            let waypoints = [];
+            
+            let initialDate = date || new Date(); 
+            const [hours, minutes] = startTime.split(':').map(Number);
+            currentTime = new Date(initialDate);
+            currentTime.setHours(hours, minutes, 0, 0);
+
+
+            let totalTravelDuration = 0;
 
             for (let i = 0; i < places.length; i++) {
-                const dest = places[i];
-                let dur = 0, routeLink = null;
-                if (dest.coords && currentPoint.coords) {
-                    const res = await getDrivingDuration(currentPoint, dest);
-                    dur = res.duration;
-                    if (dur > 0 || res.routeFound) routeLink = `https://map.kakao.com/link/from/${currentPoint.name},${currentPoint.coords.lat},${currentPoint.coords.lng}/to/${dest.name},${dest.coords.lat},${dest.coords.lng}`;
-                }
-                const arrTime = new Date(currentTime.getTime() + dur * 60 * 1000);
-                totalTravel += dur;
-                const stayVal = (dest.stayDuration === '일정종료') ? '일정종료' : parseInt(dest.stayDuration);
-                const depTime = (stayVal !== '일정종료') ? new Date(arrTime.getTime() + stayVal * 60 * 1000) : null;
+                const destination = places[i];
+                let travelDuration = 0;
+                let routeLink = null;
                 
+                const segmentFrom = currentPoint;
+                const segmentTo = destination;
+
+                if (destination.coords && currentPoint.coords) {
+                    const travelResult = await getDrivingDuration(currentPoint, destination);
+                    travelDuration = travelResult.duration;
+                    
+                    // 경로가 유효할 경우에만 링크 생성
+                    if (travelDuration > 0 || travelResult.routeFound) {
+                        routeLink = `https://map.kakao.com/link/from/${segmentFrom.name},${segmentFrom.coords.lat},${segmentFrom.coords.lng}/to/${segmentTo.name},${segmentTo.coords.lat},${segmentTo.coords.lng}`;
+                    }
+                    
+                    // 경로를 찾지 못했으나 크래시를 방지했으므로, travelDuration은 0이거나 계산된 값일 것임.
+                }
+                
+                const arrivalTime = new Date(currentTime.getTime() + travelDuration * 60 * 1000);
+                totalTravelDuration += travelDuration;
+
+                const stayDurationValue = (destination.stayDuration === '일정종료' || destination.stayDuration.toLowerCase() === '일정종료') ? '일정종료' : parseInt(destination.stayDuration);
+                
+                const departureTime = (stayDurationValue !== '일정종료') ? new Date(arrivalTime.getTime() + stayDurationValue * 60 * 1000) : null;
+                
+                let travelStatus = travelDuration > 0 ? `${travelDuration}분 소요` : (destination.coords && currentPoint.coords ? '경로 미탐색' : '장소 이동 없음');
+
                 travelPlan.push({
-                    from: currentPoint.name, to: dest.name, travelDuration: dur, arrivalTime: arrTime,
-                    stayDuration: stayVal, departureTime: depTime, remark: dest.remark, routeLink: routeLink,
-                    category: dest.category, // 결과에 카테고리 포함
-                    travelStatus: dur > 0 ? `${dur}분 소요` : (dest.coords && currentPoint.coords ? '경로 미탐색' : '이동 없음')
+                    from: segmentFrom.name,
+                    to: segmentTo.name,
+                    travelDuration: travelDuration,
+                    arrivalTime: arrivalTime,
+                    stayDuration: stayDurationValue,
+                    departureTime: departureTime,
+                    remark: destination.remark,
+                    routeLink: routeLink,
+                    travelStatus: travelStatus // 결과 테이블에 표시할 상태 추가
                 });
-                if (stayVal === '일정종료') break;
-                if (dest.coords) currentPoint = dest;
-                currentTime = depTime;
+                
+                if (stayDurationValue === '일정종료') {
+                    break;
+                }
+                
+                if (destination.coords) {
+                    currentPoint = destination;
+                    waypoints.push(currentPoint);
+                }
+                currentTime = departureTime;
             }
-            renderResults(daySchedule, travelPlan, totalTravel, dayIndex);
+            
+            const firstPlaceWithCoords = places.find(p => p.coords);
+            let fullRouteLink = null;
+            if (startPoint.coords && firstPlaceWithCoords) {
+                const validWaypoints = waypoints.filter(wp => wp.coords);
+                
+                let originParam = `${startPoint.name},${startPoint.coords.lat},${startPoint.coords.lng}`;
+                let destinationParam = '';
+                let waypointsParam = '';
+
+                if (validWaypoints.length > 0) {
+                    destinationParam = `${validWaypoints[validWaypoints.length - 1].name},${validWaypoints[validWaypoints.length - 1].coords.lat},${validWaypoints[validWaypoints.length - 1].coords.lng}`;
+                    if (validWaypoints.length > 1) {
+                         waypointsParam = validWaypoints.slice(0, -1).map(wp => `${wp.name},${wp.coords.lat},${wp.coords.lng}`).join('/');
+                         fullRouteLink = `https://map.kakao.com/link/to/${originParam}/via/${waypointsParam}/${destinationParam}`;
+                    } else {
+                         fullRouteLink = `https://map.kakao.com/link/from/${originParam}/to/${destinationParam}`;
+                    }
+                } else {
+                    fullRouteLink = `https://map.kakao.com/link/from/${originParam}/to/${firstPlaceWithCoords.name},${firstPlaceWithCoords.coords.lat},${firstPlaceWithCoords.coords.lng}`;
+                }
+            }
+
+
+            renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink);
         }
 
         async function getDrivingDuration(start, end) {
             const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${start.coords.lng},${start.coords.lat}&destination=${end.coords.lng},${end.coords.lat}`;
-            try {
-                const res = await fetch(url, { headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` } });
-                const json = await res.json();
-                if (json.routes && json.routes.length > 0) return { duration: Math.floor(json.routes[0].summary.duration / 60), routeFound: true };
-            } catch (e) {}
-            return { duration: 0, routeFound: false };
+            let retryCount = 0;
+            const maxRetries = 3;
+            let duration = 0;
+            let routeFound = false; // 경로 탐색 성공 여부
+
+            while (retryCount < maxRetries) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: { 'Authorization': `KakaoAK ${KAKAO_API_KEY}` }
+                    });
+                    const json = await response.json();
+                    
+                    // 🚨🚨🚨 방어적 코드 시작 🚨🚨🚨
+                    if (json.routes && json.routes.length > 0 && json.routes[0].summary) {
+                        const route = json.routes[0];
+                        const durationInSeconds = route.summary.duration;
+                        duration = Math.floor(durationInSeconds / 60);
+                        routeFound = true; 
+                        break; // 성공하면 루프 종료
+                    } else if (json.code === 104) {
+                        // 104: 경로 탐색 결과 없음 (좌표는 유효하나 길찾기 불가)
+                        console.warn(`경로 탐색 불가: ${start.name} -> ${end.name}`);
+                        duration = 0; // 경로 없으면 0분으로 처리
+                        routeFound = false; 
+                        break; // 경로를 못찾은 것이므로 재시도 불필요
+                    } else {
+                        // 기타 예상치 못한 응답 구조
+                        throw new Error("Unexpected API response structure or data."); 
+                    }
+                    // 🚨🚨🚨 방어적 코드 끝 🚨🚨🚨
+                } catch (error) {
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        console.error(`카카오 내비 API 호출 실패 (재시도 ${retryCount}):`, error.message);
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000));
+                    } else {
+                        console.error('카카오 내비 API 호출 실패 (최대 재시도 횟수 초과):', error.message);
+                        // 최대 재시도 후에도 실패하면 duration 0으로 처리하고 루프 종료
+                        duration = 0;
+                        routeFound = false;
+                        break; 
+                    }
+                }
+            }
+
+            return { duration: duration, routeFound: routeFound };
         }
         
-        function renderResults(daySchedule, travelPlan, totalTravel, dayIndex) {
-            const block = document.createElement('div');
-            block.id = `result-day-${dayIndex}`; block.className = 'capture-card';
-            let dTitle = `${dayIndex}일차`;
-            if (daySchedule.date) dTitle += ` ${daySchedule.date.getMonth()+1}/${daySchedule.date.getDate()}(${dayOfWeek[daySchedule.date.getDay()]})`;
+        function renderResults(daySchedule, travelPlan, totalTravelDuration, dayIndex, fullRouteLink) {
+            const dayResultBlock = document.createElement('div');
+            dayResultBlock.id = `result-day-${dayIndex}`;
+            dayResultBlock.className = 'capture-card';
+            
+            const dayTitle = document.createElement('div');
+            dayTitle.className = 'capture-header text-xl font-bold';
+            
+            let displayTitle = `${dayIndex}일차`;
+            if (daySchedule.date) {
+                const month = daySchedule.date.getMonth() + 1;
+                const day = daySchedule.date.getDate();
+                const dayString = dayOfWeek[daySchedule.date.getDay()];
+                displayTitle += ` ${month}/${day}(${dayString})`;
+            }
 
-            const header = document.createElement('div');
-            header.className = 'capture-header text-xl font-bold';
-            header.innerHTML = `<span class="text-gray-800">${dTitle}</span><button class="bg-blue-500 text-white text-sm py-1 px-3 rounded-full capture-btn" onclick="captureElement('result-day-${dayIndex}', '${dTitle}')">캡처하기</button>`;
-            block.appendChild(header);
+            dayTitle.innerHTML = `
+                <span class="text-gray-800">${displayTitle}</span>
+                <div class="flex gap-2">
+                    ${fullRouteLink ? `<a href="${fullRouteLink}" target="_blank" class="bg-blue-500 text-white text-sm py-1 px-3 rounded-full hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-map mr-1"></i>전체 경로 보기
+                    </a>` : ''}
+                    <button class="bg-blue-500 text-white text-sm py-1 px-3 rounded-full hover:bg-blue-600 transition-colors capture-btn" onclick="captureElement('result-day-${dayIndex}', '${displayTitle}')">
+                        <i class="fas fa-camera mr-1"></i>캡처하기
+                    </button>
+                </div>
+            `;
+            dayResultBlock.appendChild(dayTitle);
 
-            const container = document.createElement('div');
-            container.className = 'capture-table-container';
-            const table = document.createElement('table');
-            table.className = 'w-full text-left table-auto';
-            table.innerHTML = `<thead><tr class="text-gray-600 text-sm"><th>시간</th><th>소요시간</th><th>장소/경로</th><th>비고</th></tr></thead><tbody></tbody>`;
-            const tbody = table.querySelector('tbody');
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'capture-table-container';
+            
+            const resultsTable = document.createElement('table');
+            resultsTable.className = 'w-full text-left table-auto';
+            resultsTable.innerHTML = `
+                <thead>
+                    <tr class="text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">시간</th>
+                        <th class="py-3 px-6 text-left">소요시간</th>
+                        <th class="py-3 px-6 text-left">장소/경로</th>
+                        <th class="py-3 px-6 text-left">비고</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                </tbody>
+            `;
+            const tbody = resultsTable.querySelector('tbody');
 
-            let lastTime = new Date(daySchedule.date || new Date());
-            const [h, m] = daySchedule.startTime.split(':').map(Number);
-            lastTime.setHours(h, m, 0, 0);
+            let lastTime;
+            if (daySchedule.date) {
+                const [hours, minutes] = daySchedule.startTime.split(':').map(Number);
+                lastTime = new Date(daySchedule.date.getFullYear(), daySchedule.date.getMonth(), daySchedule.date.getDate(), hours, minutes);
+            } else {
+                const [hours, minutes] = daySchedule.startTime.split(':').map(Number);
+                lastTime = new Date();
+                lastTime.setHours(hours, minutes, 0, 0);
+            }
+            
+            let totalStayMinutes = 0;
+            let totalElapsedTime = 0;
 
             const startRow = document.createElement('tr');
-            startRow.innerHTML = `<td>${Utilities.formatTime(lastTime)}</td><td></td><td class="font-bold">${daySchedule.startPoint.name} (출발)</td><td>${daySchedule.startPoint.remark || ''}</td>`;
+            startRow.className = 'border-b border-gray-200 hover:bg-gray-100';
+            startRow.innerHTML = `
+                <td class="py-3 px-6 text-left whitespace-nowrap">${Utilities.formatTime(lastTime)}</td>
+                <td class="py-3 px-6 text-left"></td>
+                <td class="py-3 px-6 text-left font-bold text-gray-800">${daySchedule.startPoint.name} (출발)</td>
+                <td class="py-3 px-6 text-left">${daySchedule.startPoint.remark || ''}</td> 
+            `;
             tbody.appendChild(startRow);
 
-            let totalStay = 0;
             travelPlan.forEach(item => {
-                const tRow = document.createElement('tr');
-                tRow.className = 'bg-gray-50 text-xs';
-                tRow.innerHTML = `<td>${Utilities.formatTime(lastTime)}~${Utilities.formatTime(item.arrivalTime)}</td><td>${item.travelStatus}</td><td>${item.from}→${item.to}</td><td></td>`;
-                tbody.appendChild(tRow);
+                const travelStartTime = lastTime;
+                const travelEndTime = item.arrivalTime;
+                
+                const travelRow = document.createElement('tr');
+                travelRow.className = 'bg-gray-50 border-b border-gray-200 hover:bg-gray-100';
+                
+                const travelDurationText = item.travelStatus === '경로 미탐색' 
+                    ? `<span class="text-red-500 font-bold">${item.travelStatus}</span>`
+                    : item.travelStatus;
 
-                const pRow = document.createElement('tr');
-                pRow.className = 'font-medium';
-                // tr에 카테고리 정보 숨겨두기 (시각화용)
-                if (item.category) pRow.dataset.category = item.category;
-                pRow.innerHTML = `<td>${Utilities.formatTime(item.arrivalTime)}~${item.departureTime?Utilities.formatTime(item.departureTime):'종료'}</td><td>${item.stayDuration==='일정종료'?'종료':item.stayDuration+'분'}</td><td class="font-bold">${item.to}</td><td>${item.remark||''}</td>`;
-                tbody.appendChild(pRow);
-                if (item.departureTime) lastTime = item.departureTime;
-                if (item.stayDuration !== '일정종료') totalStay += item.stayDuration;
+                travelRow.innerHTML = `
+                    <td class="py-2 px-6 text-left">${Utilities.formatTime(travelStartTime)} ~ ${Utilities.formatTime(travelEndTime)}</td>
+                    <td class="py-2 px-6 text-left text-gray-600">${travelDurationText}</td>
+                    <td class="py-2 px-6 text-left">${item.from} → ${item.to}
+                        ${item.routeLink ? `<a href="${item.routeLink}" target="_blank" class="text-blue-500 hover:underline ml-2"><i class="fas fa-map-marker-alt"></i></a>` : ''}
+                    </td>
+                    <td class="py-2 px-6 text-left"></td>
+                `;
+
+                tbody.appendChild(travelRow);
+                
+                totalElapsedTime += item.travelDuration;
+
+                const placeRow = document.createElement('tr');
+                placeRow.className = 'border-b border-gray-200 hover:bg-gray-100 font-medium text-gray-800';
+                
+                const stayDurationText = item.stayDuration === '일정종료' ? '일정 종료' : `${item.stayDuration}분`;
+                if (item.stayDuration !== '일정종료' && !isNaN(parseInt(item.stayDuration))) {
+                    totalStayMinutes += parseInt(item.stayDuration);
+                    totalElapsedTime += parseInt(item.stayDuration);
+                }
+
+                const arrivalTimeText = `${Utilities.formatTime(item.arrivalTime)} ~ ${item.departureTime ? Utilities.formatTime(item.departureTime) : '일정 종료'}`;
+
+                placeRow.innerHTML = `
+                    <td class="py-3 px-6 text-left">${arrivalTimeText}</td>
+                    <td class="py-3 px-6 text-left">${stayDurationText}</td>
+                    <td class="py-3 px-6 text-left font-bold">${item.to}</td>
+                    <td class="py-3 px-6 text-left">${item.remark || ''}</td>
+                `;
+                tbody.appendChild(placeRow);
+                
+                if (item.departureTime) {
+                    lastTime = item.departureTime;
+                }
             });
 
-            container.appendChild(table);
-            const sum = document.createElement('div');
-            sum.className = 'mt-4 text-center font-semibold';
-            sum.innerHTML = `총 소요: <span class="text-green-600">${Utilities.formatDuration(totalTravel + totalStay)}</span>`;
-            container.appendChild(sum);
-            block.appendChild(container);
-            resultsContainer.appendChild(block);
+            tableContainer.appendChild(resultsTable);
+            
+            const finalTotalDuration = totalTravelDuration + totalStayMinutes;
+            const summary = document.createElement('div');
+            summary.className = 'mt-6 text-center text-gray-700 font-semibold';
+            summary.innerHTML = `
+                <p class="text-xl no-select">
+                    총 소요시간: <span class="text-green-600 font-bold">${Utilities.formatDuration(finalTotalDuration)}</span>
+                    <span class="text-gray-500 font-normal">(총 이동시간: ${Utilities.formatDuration(totalTravelDuration)})</span>
+                </p>
+            `;
+            tableContainer.appendChild(summary);
+
+            dayResultBlock.appendChild(tableContainer);
+            resultsContainer.appendChild(dayResultBlock);
         }
         
         const Utilities = {
-            formatTime: d => `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`,
-            formatDuration: m => `${Math.floor(m/60)>0?Math.floor(m/60)+'시간 ':''}${m%60}분`
+            formatTime: (date) => {
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                return `${hours}:${minutes}`;
+            },
+            formatDuration: (totalMinutes) => {
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                return `${hours > 0 ? `${hours}시간 ` : ''}${minutes}분`;
+            }
         };
 
-        window.captureElement = (id, name) => {
-            const el = document.getElementById(id);
-            const btn = el.querySelector('.capture-btn');
-            if (btn) btn.style.display = 'none';
-            html2canvas(el, { scale: 2 }).then(canvas => {
-                const a = document.createElement('a'); a.href = canvas.toDataURL(); a.download = `${name}.png`; a.click();
-                if (btn) btn.style.display = '';
+        window.captureElement = function(elementId, filename) {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                showNotification('캡처할 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+            const captureBtn = element.querySelector('.capture-btn');
+            if (captureBtn) {
+                captureBtn.style.display = 'none';
+            }
+
+            html2canvas(element, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${filename}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                if (captureBtn) {
+                    captureBtn.style.display = '';
+                }
+
+                showNotification(`${filename}이(가) 성공적으로 캡처되었습니다.`);
             });
         };
 
-        saveBtn.addEventListener('click', () => {
+        // --- PC File Save/Load functionality ---
+
+        function exportScheduleData() {
             const schedules = [];
             for (let i = 1; i <= dayCount; i++) {
-                const block = document.getElementById(`day-${i}`);
-                const sPoint = block.querySelector(`input[id^="start-point"]`);
-                const places = [];
-                block.querySelectorAll(`.place-input`).forEach(pDiv => {
-                    const pInp = pDiv.querySelector('input[placeholder="장소명 입력"]');
-                    places.push({
-                        name: pInp.value, coords: { lat: pInp.dataset.lat||'', lng: pInp.dataset.lng||'' },
-                        category: pInp.dataset.category || '', stayDuration: pDiv.querySelector('input[placeholder^="체류 시간"]').value,
-                        remark: pDiv.querySelector('input[placeholder^="비고"]').value
+                const dayBlock = document.getElementById(`day-${i}`);
+                if (!dayBlock) continue;
+                
+                const dateInput = dayBlock.querySelector('.date-input');
+                const startTimeInput = dayBlock.querySelector(`#start-time-${i}`);
+                const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`);
+                const placesInputs = dayBlock.querySelectorAll(`.place-input`);
+
+                const placesData = [];
+                placesInputs.forEach(placeInputDiv => {
+                    const placeNameInput = placeInputDiv.querySelector('input[placeholder="장소명 입력"]');
+                    const stayDurationInput = placeInputDiv.querySelector('input[placeholder="체류 시간(분)"]');
+                    const remarkInput = placeInputDiv.querySelector('input[placeholder^="비고"]');
+                    
+                    placesData.push({
+                        name: placeNameInput.value,
+                        coords: { lat: placeNameInput.dataset.lat || '', lng: placeNameInput.dataset.lng || '' },
+                        stayDuration: stayDurationInput.value,
+                        remark: remarkInput ? remarkInput.value : ''
                     });
                 });
+
                 schedules.push({
-                    dayIndex: i, date: block.querySelector('.date-input').value, startTime: block.querySelector(`#start-time-${i}`).value,
-                    startPoint: { name: sPoint.value, coords: { lat: sPoint.dataset.lat||'', lng: sPoint.dataset.lng||'' }, category: sPoint.dataset.category||'', remark: block.querySelector(`input[id^="start-remark"]`).value },
-                    places: places
+                    dayIndex: i,
+                    date: dateInput.value,
+                    startTime: startTimeInput.value,
+                    startPoint: {
+                        name: startPointInput.value,
+                        coords: { lat: startPointInput.dataset.lat || '', lng: startPointInput.dataset.lng || '' },
+                        remark: startRemarkInput.value || ''
+                    },
+                    places: placesData
                 });
             }
-            const data = { schedules, favorites, version: '1.5' };
-            filenameModal.classList.remove('hidden');
-            filenameSubmitBtn.onclick = () => {
-                const n = filenameInput.value.trim(); if(!n) return;
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${n}.json`; a.click();
-                filenameModal.classList.add('hidden');
+
+            return {
+                dayCount: dayCount,
+                schedules: schedules,
+                favorites: favorites, // 즐겨찾기 데이터 포함 (새 구조)
+                version: '1.4' // 버전 업데이트 (버그 픽스)
             };
-        });
-
-        loadBtn.addEventListener('click', () => fileLoadInput.click());
-        fileLoadInput.addEventListener('change', e => {
-            const reader = new FileReader();
-            reader.onload = ev => {
-                const data = JSON.parse(ev.target.result);
-                dayContainer.innerHTML = ''; dayCount = 0;
-                favorites = data.favorites || []; saveFavorites();
-                data.schedules.forEach(s => {
-                    addDay();
-                    const b = document.getElementById(`day-${dayCount}`);
-                    b.querySelector('.date-input').value = s.date;
-                    b.querySelector(`#start-time-${dayCount}`).value = s.startTime;
-                    const sp = b.querySelector(`input[id^="start-point"]`);
-                    sp.value = s.startPoint.name; sp.dataset.lat = s.startPoint.coords.lat; sp.dataset.lng = s.startPoint.coords.lng; sp.dataset.category = s.startPoint.category||'';
-                    b.querySelector(`input[id^="start-remark"]`).value = s.startPoint.remark;
-                    const pc = b.querySelector('.drag-container'); pc.innerHTML = '';
-                    s.places.forEach(p => { const pi = createPlaceInput(p); pc.appendChild(pi); attachAutocomplete(pi.querySelector('input[type="text"]')); });
-                    updatePlaceLabels(b);
-                });
-                updateAllFavoriteDropdowns();
-            };
-            reader.readAsText(e.target.files[0]);
-        });
-
-        passwordSubmitBtn.addEventListener('click', checkPasswordAndInitialize);
-        function handlePasswordKey(e) { if (e.key === 'Enter') checkPasswordAndInitialize(); }
-    </script>
-
-    <style>
-        :root { --grid-hour-height: 80px; --grid-color: #f1f5f9; }
-        #visual-timetable-wrapper { margin-top: 2rem; font-family: 'Pretendard', sans-serif; }
-        .controls-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 10px; }
-        #capture-area { background: white; padding: 40px 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow-x: auto; min-width: 600px; }
-        .timetable-header-row { display: flex; margin-left: 60px; border-bottom: 2px solid #e2e8f0; }
-        .day-column-header { flex: 1; min-width: 200px; text-align: center; padding: 15px 0; font-weight: 800; color: #1e293b; }
-        .timetable-content-row { display: flex; position: relative; }
-        .time-axis { width: 60px; flex-shrink: 0; }
-        .hour-label { height: var(--grid-hour-height); font-size: 0.8rem; color: #64748b; text-align: right; padding-right: 15px; display: flex; align-items: flex-start; }
-        .day-grid-column { flex: 1; min-width: 200px; position: relative; border-right: 1px solid #f1f5f9; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px); background-size: 100% var(--grid-hour-height); }
-        .event-block { position: absolute; left: 4px; right: 4px; border-radius: 6px; padding: 4px 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.08); overflow: hidden; transition: all 0.2s ease; }
-        .event-name { font-weight: 700; line-height: 1.2; word-break: keep-all; font-size: 0.85rem; }
-        .type-move { background-color: #f1f5f9 !important; color: #475569 !important; border-left: 4px solid #94a3b8 !important; }
-        .type-meal { background-color: #f0fdf4 !important; color: #15803d !important; border-left: 4px solid #22c55e !important; }
-        .type-program { background-color: #fff9f2 !important; color: #b45309 !important; border-left: 4px solid #f59e0b !important; }
-        .type-stay { background-color: #f5f3ff !important; color: #6d28d9 !important; border-left: 4px solid #8b5cf6 !important; }
-        .hidden { display: none !important; }
-    </style>
-
-    <div id="visual-timetable-wrapper" class="hidden">
-        <div class="controls-bar">
-            <h2 class="text-xl font-bold text-slate-800">🗓️ 카테고리별 일정표 (자동 분류)</h2>
-            <button id="btn-save-image" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 shadow-md text-sm">이미지로 저장</button>
-        </div>
-        <div id="capture-area">
-            <div id="timetable-headers" class="timetable-header-row"></div>
-            <div class="timetable-content-row">
-                <div id="time-axis" class="time-axis"></div>
-                <div id="grid-columns" class="flex flex-1"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    (function() {
-        const HOUR_HEIGHT = 80;
-        const PIXELS_PER_MIN = HOUR_HEIGHT / 60;
-
-        // 카카오 API 카테고리 그룹 코드 정의
-        // FD6: 음식점, CE7: 카페
-        const MEAL_CODES = ['FD6', 'CE7'];
-        // AD5: 숙박
-        const STAY_CODES = ['AD5'];
-        // AT4: 관광명소, PO3: 공공기관(공항 등), CT1: 문화시설
-        const PROGRAM_CODES = ['AT4', 'CT1', 'PO3'];
-
-        const observer = new MutationObserver(() => {
-            if (document.getElementById('results-container')?.children.length > 0) setTimeout(generateTimetable, 500);
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-
-        const parseTime = s => { if(!s)return null; const m = s.match(/(\d{1,2}):(\d{2})/); return m?parseInt(m[1])*60+parseInt(m[2]):null; };
-
-        function generateTimetable() {
-            const results = document.getElementById('results-container');
-            const wrapper = document.getElementById('visual-timetable-wrapper');
-            const dayCards = results.querySelectorAll('.capture-card');
-            if (dayCards.length === 0) return;
-
-            let minT = 1440, maxT = 0;
-            const allDays = [];
-
-            dayCards.forEach(card => {
-                const title = card.querySelector('.capture-header span')?.innerText || '일정';
-                const events = [];
-                card.querySelectorAll('tbody tr').forEach((row, i) => {
-                    const cells = row.querySelectorAll('td');
-                    if (cells.length < 3) return;
-                    const times = (cells[0].innerText || "").split('~');
-                    let s = parseTime(times[0]), e = parseTime(times[1] || times[0]);
-                    if (s === null) return;
-                    const name = cells[2].innerText.trim();
-                    const isMove = row.classList.contains('bg-gray-50') || name.includes('→');
-                    const category = row.dataset.category || ''; // 저장된 카테고리 코드
-
-                    if (isMove && parseInt(cells[1].innerText) < 10) return;
-                    if (i === 0 && name.includes('공항')) { e = s; s -= 60; }
-
-                    minT = Math.min(minT, s); maxT = Math.max(maxT, e);
-                    events.push({ s, e, name, isMove, category, dur: cells[1].innerText });
-                });
-                if (events.length > 0) allDays.push({ title, events });
-            });
-
-            if (allDays.length === 0) return;
-            wrapper.classList.remove('hidden');
-            const startH = Math.floor(minT/60), endH = Math.ceil(maxT/60);
-            const axis = document.getElementById('time-axis'), head = document.getElementById('timetable-headers'), grid = document.getElementById('grid-columns');
-            axis.innerHTML = ''; head.innerHTML = ''; grid.innerHTML = '';
-
-            for (let h = startH; h <= endH; h++) {
-                const l = document.createElement('div'); l.className = 'hour-label'; l.innerText = `${String(h).padStart(2,'0')}:00`; axis.appendChild(l);
-            }
-
-            allDays.forEach(day => {
-                const hDiv = document.createElement('div'); hDiv.className = 'day-column-header'; hDiv.innerText = day.title; head.appendChild(hDiv);
-                const col = document.createElement('div'); col.className = 'day-grid-column'; col.style.height = `${(endH-startH+1)*HOUR_HEIGHT}px`;
-                day.events.forEach(ev => {
-                    const block = document.createElement('div');
-                    let type = 'type-program';
-                    if (ev.isMove) type = 'type-move';
-                    else if (MEAL_CODES.includes(ev.category)) type = 'type-meal';
-                    else if (STAY_CODES.includes(ev.category)) type = 'type-stay';
-                    else if (PROGRAM_CODES.includes(ev.category)) type = 'type-program';
-                    // 기존 하드코딩 키워드 백업 (API 코드가 없는 경우 대비)
-                    else if (['중식','석식','식사','카페'].some(k => ev.name.includes(k))) type = 'type-meal';
-                    else if (['호텔','숙소','리조트'].some(k => ev.name.includes(k))) type = 'type-stay';
-
-                    block.className = `event-block ${type}`;
-                    block.style.top = `${(ev.s - startH*60)*PIXELS_PER_MIN}px`;
-                    block.style.height = `${Math.max(25, (ev.e-ev.s)*PIXELS_PER_MIN)}px`;
-                    block.innerHTML = `<div class="event-name">${ev.isMove ? `이동(${ev.dur})` : ev.name}</div>`;
-                    col.appendChild(block);
-                });
-                grid.appendChild(col);
-            });
         }
 
-        document.getElementById('btn-save-image').onclick = () => {
-            html2canvas(document.getElementById('capture-area'), { scale: 2 }).then(canvas => {
-                const a = document.createElement('a'); a.download = '여행_시간표.png'; a.href = canvas.toDataURL(); a.click();
+        function getInitialFilename() {
+            return ''; 
+        }
+        
+        saveBtn.addEventListener('click', (event) => {
+            event.preventDefault(); 
+            
+            const data = exportScheduleData();
+            if (data.schedules.length === 0) {
+                 showNotification('저장할 일정이 없습니다. 일정을 추가해주세요.');
+                 return;
+            }
+
+            filenameInput.value = getInitialFilename(); 
+            filenameError.classList.add('hidden');
+            filenameModal.classList.remove('hidden');
+            filenameInput.focus();
+        });
+
+        filenameSubmitBtn.addEventListener('click', performDownload);
+        
+        filenameCancelBtn.addEventListener('click', () => {
+            filenameModal.classList.add('hidden');
+        });
+
+        filenameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                performDownload();
+            }
+        });
+
+        function performDownload() {
+            const name = filenameInput.value.trim();
+            if (!name) {
+                filenameError.textContent = '파일 이름을 입력해주세요.';
+                filenameError.classList.remove('hidden');
+                return;
+            }
+            
+            filenameModal.classList.add('hidden');
+            
+            const data = exportScheduleData();
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${name}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`'${name}.json' 파일이 PC에 성공적으로 저장되었습니다.`);
+        }
+
+
+        loadBtn.addEventListener('click', () => {
+            fileLoadInput.click();
+        });
+        
+        fileLoadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    loadScheduleData(data);
+                    showNotification(`'${file.name}' 파일이 성공적으로 불러와졌습니다.`);
+                } catch (error) {
+                    console.error("Error loading file:", error);
+                    showNotification("파일을 불러오는 데 실패했습니다. 파일 형식이 올바른지 확인해주세요.");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = null; 
+        });
+
+        function loadScheduleData(data) {
+            // Load Favorites first
+            if (data.favorites && Array.isArray(data.favorites)) {
+                // 기존 버전의 즐겨찾기(stayDuration, remark 포함)를 처리하거나 새 버전을 로드합니다.
+                favorites = data.favorites.map(fav => {
+                    if (fav.customName && fav.place) {
+                        return fav; // 새 버전 구조
+                    }
+                    // 기존 버전 구조 (v1.2 이하): name, coords, stayDuration, remark
+                    // 새 구조로 변환하여 저장 (단, 체류시간/비고는 무시)
+                    return {
+                        id: fav.id,
+                        customName: fav.name, 
+                        place: {
+                            name: fav.name,
+                            coords: fav.coords
+                        }
+                    };
+                });
+                saveFavorites(); // 로컬 스토리지에 업데이트
+            } else {
+                 favorites = [];
+                 saveFavorites();
+            }
+
+            dayContainer.innerHTML = '';
+            dayCount = 0;
+
+            if (!data.schedules || data.schedules.length === 0) {
+                 showNotification('불러올 수 있는 유효한 일정 데이터가 파일에 없습니다.');
+                 return;
+            }
+
+            data.schedules.forEach(schedule => {
+                addDay();
+                const dayBlock = document.getElementById(`day-${dayCount}`);
+                
+                dayBlock.querySelector('.date-input').value = schedule.date;
+                dayBlock.querySelector(`#start-time-${dayCount}`).value = schedule.startTime; 
+                
+                const startPointInput = dayBlock.querySelector(`input[id^="start-point"]`);
+                const startRemarkInput = dayBlock.querySelector(`input[id^="start-remark"]`);
+                
+                startPointInput.value = schedule.startPoint.name;
+                startPointInput.dataset.lat = schedule.startPoint.coords.lat;
+                startPointInput.dataset.lng = schedule.startPoint.coords.lng;
+                startRemarkInput.value = schedule.startPoint.remark || ''; 
+                
+                const placesContainer = dayBlock.querySelector('.drag-container');
+                placesContainer.innerHTML = ''; 
+
+                schedule.places.forEach((place, index) => {
+                    const placeInput = createPlaceInput(place);
+                    placesContainer.appendChild(placeInput);
+                    // 이미 값이 채워져 있으므로 자동완성 이벤트만 다시 연결
+                    attachAutocomplete(placeInput.querySelector('input[type="text"]')); 
+                });
+                updatePlaceLabels(dayBlock);
+                attachDeleteEvents(dayBlock);
+                attachDragAndDrop(dayBlock);
             });
-        };
-    })();
+            
+            // 불러오기 완료 후 드롭다운 목록 업데이트
+            updateAllFavoriteDropdowns();
+        }
+        
+        // Event listeners for password modal
+        passwordSubmitBtn.addEventListener('click', checkPasswordAndInitialize);
+        function handlePasswordKey(event) {
+            if (event.key === 'Enter') {
+                checkPasswordAndInitialize();
+            }
+        }
     </script>
+    <style>
+:root {
+    --grid-hour-height: 80px; 
+    --grid-color: #f1f5f9;
+}
+
+#visual-timetable-wrapper {
+    margin-top: 2rem;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+}
+
+.controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 10px;
+}
+
+#capture-area {
+    background: white;
+    padding: 40px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    overflow-x: auto;
+    min-width: 600px;
+}
+
+.timetable-header-row {
+    display: flex;
+    margin-left: 60px; 
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.day-column-header {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+    padding: 15px 0;
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.timetable-content-row {
+    display: flex;
+    position: relative;
+}
+
+.time-axis {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.hour-label {
+    height: var(--grid-hour-height);
+    font-size: 0.8rem;
+    color: #64748b;
+    text-align: right;
+    padding-right: 15px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.day-grid-column {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+    border-right: 1px solid #f1f5f9;
+    background-image: linear-gradient(var(--grid-color) 1px, transparent 1px);
+    background-size: 100% var(--grid-hour-height); 
+}
+
+.event-block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.event-name { 
+    font-weight: 700; 
+    line-height: 1.2; 
+    word-break: keep-all; 
+    font-size: 0.85rem; 
+}
+
+/* 색상 테마 정의 */
+.type-move { background-color: #f1f5f9 !important; color: #475569 !important; border-left: 4px solid #94a3b8 !important; }
+.type-meal { background-color: #f0fdf4 !important; color: #15803d !important; border-left: 4px solid #22c55e !important; }
+.type-program { background-color: #fff9f2 !important; color: #b45309 !important; border-left: 4px solid #f59e0b !important; }
+.type-stay { background-color: #f5f3ff !important; color: #6d28d9 !important; border-left: 4px solid #8b5cf6 !important; }
+
+.hidden { display: none !important; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<div id="visual-timetable-wrapper" class="hidden">
+    <div class="controls-bar">
+        <h2 class="text-xl font-bold text-slate-800">🗓️ 제주여행 카테고리별 일정표</h2>
+        <button id="btn-save-image" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 shadow-md transition-all text-sm">
+            이미지로 저장
+        </button>
+    </div>
+
+    <div id="capture-area">
+        <div id="timetable-headers" class="timetable-header-row"></div>
+        <div class="timetable-content-row">
+            <div id="time-axis" class="time-axis"></div>
+            <div id="grid-columns" class="flex flex-1"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const HOUR_HEIGHT = 80;
+    const PIXELS_PER_MIN = HOUR_HEIGHT / 60;
+
+    const MEAL_KEYWORDS = ['남경어곰탕', '삼거리농원', '해원횟집', '복길', '식사', '중식', '석식', '점심', '저녁'];
+    const STAY_KEYWORDS = ['엠버', '호텔', '리조트', '숙소', '공항', '제주국제공항', '운진항'];
+    const PROGRAM_KEYWORDS = ['가파도', '제주맥주', '양조장', '가시버시', '생각하는정원', '환상숲', '곶자왈', '공방', '시장'];
+
+    const observer = new MutationObserver(() => {
+        const results = document.getElementById('results-container');
+        if (results && results.children.length > 0) {
+            setTimeout(generateTimetable, 500);
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    function parseTime(str) {
+        if (!str || typeof str !== 'string') return null;
+        const match = str.match(/(\d{1,2}):(\d{2})/);
+        if (!match) return null;
+        return parseInt(match[1]) * 60 + parseInt(match[2]);
+    }
+
+    function generateTimetable() {
+        const resultsContainer = document.getElementById('results-container');
+        const wrapper = document.getElementById('visual-timetable-wrapper');
+        if (!resultsContainer) return;
+
+        const dayCards = resultsContainer.querySelectorAll('.capture-card');
+        if (dayCards.length === 0) return;
+
+        let minTotalMin = 1440;
+        let maxTotalMin = 0;
+        const allDaysData = [];
+
+        dayCards.forEach((card) => {
+            const headerElem = card.querySelector('.capture-header span');
+            const title = headerElem ? headerElem.innerText : '일정';
+            const rows = card.querySelectorAll('tbody tr');
+            const rawEvents = [];
+
+            rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 3) return;
+                
+                const timeText = cells[0].innerText || "";
+                const timeParts = timeText.split('~');
+                let start = parseTime(timeParts[0]);
+                let end = parseTime(timeParts[1] || timeParts[0]);
+
+                if (start === null) return;
+
+                const name = (cells[2].innerText || "").trim();
+                const durationText = (cells[1].innerText || "").trim();
+                const durationVal = parseInt(durationText.replace(/[^0-9]/g, "")) || 0;
+                const isMove = row.classList.contains('bg-gray-50') || name.includes('→');
+
+                // 1. 10분 미만 이동은 무시
+                if (isMove && durationVal < 10) {
+                    return; 
+                }
+
+                // 2. 첫 일정이고 '공항'이 포함된 경우 1시간 전부터 시작하도록 보정
+                if (index === 0 && name.includes('공항')) {
+                    // 원래 시작 시간을 종료 시간으로 두고, 1시간 전을 시작 시간으로 설정
+                    end = start;
+                    start = start - 60;
+                }
+
+                rawEvents.push({ start, end, name, duration: durationText, isMove });
+            });
+
+            if (rawEvents.length > 0) {
+                rawEvents.forEach(e => {
+                    minTotalMin = Math.min(minTotalMin, e.start);
+                    maxTotalMin = Math.max(maxTotalMin, e.end);
+                });
+                allDaysData.push({ title, events: rawEvents });
+            }
+        });
+
+        if (allDaysData.length === 0) return;
+        wrapper.classList.remove('hidden');
+
+        const startHour = Math.floor(minTotalMin / 60);
+        const endHour = Math.ceil(maxTotalMin / 60);
+        
+        const axis = document.getElementById('time-axis');
+        const headerRow = document.getElementById('timetable-headers');
+        const gridRow = document.getElementById('grid-columns');
+        
+        axis.innerHTML = ''; headerRow.innerHTML = ''; gridRow.innerHTML = '';
+
+        for (let h = startHour; h <= endHour; h++) {
+            const label = document.createElement('div');
+            label.className = 'hour-label';
+            label.innerText = `${String(h).padStart(2, '0')}:00`;
+            axis.appendChild(label);
+        }
+
+        allDaysData.forEach(day => {
+            const hDiv = document.createElement('div');
+            hDiv.className = 'day-column-header';
+            hDiv.innerText = day.title;
+            headerRow.appendChild(hDiv);
+
+            const col = document.createElement('div');
+            col.className = 'day-grid-column';
+            col.style.height = `${(endHour - startHour + 1) * HOUR_HEIGHT}px`;
+
+            day.events.forEach(ev => {
+                const top = (ev.start - (startHour * 60)) * PIXELS_PER_MIN;
+                let height = (ev.end - ev.start) * PIXELS_PER_MIN;
+                if (height < 25) height = 25; 
+
+                const block = document.createElement('div');
+                let typeClass = 'type-program'; 
+
+                if (ev.isMove) {
+                    typeClass = 'type-move';
+                } else if (MEAL_KEYWORDS.some(kw => ev.name.includes(kw))) {
+                    typeClass = 'type-meal';
+                } else if (STAY_KEYWORDS.some(kw => ev.name.includes(kw))) {
+                    typeClass = 'type-stay';
+                }
+
+                block.className = `event-block ${typeClass}`;
+                block.style.top = `${top}px`;
+                block.style.height = `${height}px`;
+                
+                const text = ev.isMove ? `이동(${ev.duration})` : ev.name;
+                block.innerHTML = `<div class="event-name">${text}</div>`;
+                col.appendChild(block);
+            });
+            gridRow.appendChild(col);
+        });
+    }
+
+    document.getElementById('btn-save-image').addEventListener('click', function() {
+        const area = document.getElementById('capture-area');
+        html2canvas(area, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = '제주여행_상세_시간표.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    });
+})();
+</script>
 </body>
 </html>
